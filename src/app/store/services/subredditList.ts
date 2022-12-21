@@ -1,4 +1,4 @@
-import { AddSubredditPayload, DeleteSubredditPayload, SubredditCategory} from '../../common/interfaces/subredditListTypes';
+import { SubredditCategory, SubredditDetails} from '../../common/interfaces/subredditListTypes';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const subredditListAPI = createApi({
@@ -15,7 +15,7 @@ export const subredditListAPI = createApi({
     }),
 
     addSubreddit: builder.mutation({
-      query: (body: AddSubredditPayload) => ({
+      query: (body: SubredditDetails) => ({
         url: 'subredditListAPI',
         method: 'POST',
         body,
@@ -26,7 +26,7 @@ export const subredditListAPI = createApi({
     }),
 
     deleteSubreddit: builder.mutation({
-      query: (body: DeleteSubredditPayload) => ({
+      query: (body: SubredditDetails[]) => ({
         url: 'subredditListAPI',
         method: 'DELETE',
         body,

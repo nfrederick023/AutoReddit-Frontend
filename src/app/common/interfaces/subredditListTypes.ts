@@ -1,10 +1,6 @@
-export interface AddSubredditPayload {
-    subredditName: string;
-    categoryName: string;
-}
-
-export interface DeleteSubredditPayload {
-   subredditsToDelete: AddSubredditPayload[];
+export interface SubredditDetails {
+   subredditName: string;
+   categoryName: string;
 }
 
 export interface Flair {
