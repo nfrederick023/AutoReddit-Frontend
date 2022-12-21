@@ -1,16 +1,14 @@
 import * as React from 'react';
-import { Autocomplete, Box, Button, Card, CardContent, CircularProgress, Container, Divider, FormControlLabel, Grid, InputAdornment, RadioGroup, Stack, TextField, Typography } from '@mui/material';
-import { BpCheckbox } from '../../common/components/styledCheckbox';
-import { BpRadio } from '../../common/components/styledRadioButton';
-import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from '../../common/components/styledAccordion';
-import { SubredditCategory, SubredditDetails } from '../../common/interfaces/subredditListTypes';
+import { Autocomplete, Backdrop, Box, Button, Card, CardContent, CircularProgress, Container, Divider, FormControlLabel, Grid, InputAdornment, RadioGroup, Stack, TextField, Typography } from '@mui/material';
+import { BpCheckbox } from '../../common/components/styled/styledCheckbox';
+import { BpRadio } from '../../common/components/styled/styledRadioButton';
+import { SelectedSubreddit } from '../../common/interfaces/home';
+import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from '../../common/components/styled/styledAccordion';
+import { SubredditCategory, SubredditDetails, SubredditInfo } from '../../common/interfaces/subredditList';
 import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
 import { useCheckbox } from '../../common/hooks/useCheckbox';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
-// to do:
-// delete and add while checkboxes selected is broke
 
 const HomePage: React.FC<Record<string, never>> = () => {
 
@@ -22,12 +20,13 @@ const HomePage: React.FC<Record<string, never>> = () => {
   const [sortedSubreddits, setSortedSubreddits] = useState<SubredditCategory[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [checkBoxUtility] = useCheckbox(new Map());
+  const [checkBoxUtility] = useCheckbox<SelectedSubreddit>(new Map());
 
   /* Functions */
   const addSubredditSubmit = async (data: SubredditDetails): Promise<void> => { setLoading(true); await addSubreddit(data); refetch(); };
   const deleteSubredditSubmit = async (data: SubredditDetails[]): Promise<void> => { setLoading(true); await deleteSubreddit(data); refetch(); };
   const handleExpand = (panelName: string): void => { setExpanded(expanded?.includes(panelName) ? expanded.filter(name => name !== panelName) : [panelName, ...expanded]); };
+  const createSelectedSubreddit = (subreddit: SubredditInfo): SelectedSubreddit => { return new SelectedSubreddit(subreddit); };
 
   const sortSubreddits = (): void => {
     const sortedData: SubredditCategory[] | undefined = structuredClone(data);
@@ -50,17 +49,17 @@ const HomePage: React.FC<Record<string, never>> = () => {
       });
     });
 
-    const boxesToAdd: string[][] = [];
+    // creates matrix of subreddits to add as checkboxes
+    const checkedState: Map<string, Map<string, SelectedSubreddit>> = new Map();
     sortedData.forEach((category) => {
       category.subreddits.forEach((subreddit) => {
-        boxesToAdd.push([category.categoryName, subreddit.name]);
+        checkedState.set(category.categoryName, checkedState.get(category.categoryName)?.set(subreddit.name, createSelectedSubreddit(subreddit)) || new Map([[subreddit.name, createSelectedSubreddit(subreddit)]]));
       });
     });
 
-    checkBoxUtility.addCheckboxes(boxesToAdd);
+    checkBoxUtility.setCheckboxState(checkedState);
     setSortedSubreddits(sortedData);
   };
-
 
   /* Actions */
   useEffect(() => {
@@ -74,6 +73,8 @@ const HomePage: React.FC<Record<string, never>> = () => {
 
   return (
     <>
+
+
 
       <Stack direction="row" spacing={2} >
         <Typography variant='h6' >
@@ -104,7 +105,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                   control={
                     <BpCheckbox
                       checked={checkBoxUtility.isAllChecked(category.categoryName)}
-                      indeterminate={checkBoxUtility.isIndeterminate(category.categoryName)}
+                      indeterminate={checkBoxUtility.isParentIndeterminate(category.categoryName)}
                       onChange={(): void => checkBoxUtility.checkAllWithinParent(category.categoryName)}
                     />
                   }
@@ -163,10 +164,18 @@ const HomePage: React.FC<Record<string, never>> = () => {
                                   {/* Flairs */}
                                   < RadioGroup
                                     name="radio-buttons-group"
+                                    value={checkBoxUtility.getCheckboxState().get(category.categoryName)?.get(subreddit.name)?.getFlair()}
                                   >
                                     {subreddit.flairs.map((flair) => {
                                       return (
-                                        <FormControlLabel key={flair.id} value={flair.id} control={<BpRadio />} label={flair.name} />
+                                        <FormControlLabel key={`${category.categoryName}_${subreddit.name}_${flair.name}`}
+                                          value={flair.name}
+                                          control={
+                                            <BpRadio
+                                              onChange={(): void => { checkBoxUtility.updateState(() => { checkBoxUtility.getChildState(category.categoryName, subreddit.name)?.setFlair(flair.name); }); }}
+                                            />
+                                          }
+                                          label={flair.name} />
                                       );
                                     })
                                     }
@@ -250,11 +259,6 @@ const HomePage: React.FC<Record<string, never>> = () => {
                   flexDirection="column"
                 >
                   <Button variant="outlined" type='submit' >Add Subreddit</Button>
-                  {loading ?
-                    <CircularProgress />
-                    :
-                    <></>
-                  }
                 </Box>
               </Grid>
             </Grid>

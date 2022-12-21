@@ -1,8 +1,8 @@
 import {AnyAction, isFulfilled} from '@reduxjs/toolkit';
 import { QueryThunkArg } from '@reduxjs/toolkit/dist/query/core/buildThunks';
-import { ToastTypes } from '../../common/interfaces/toastTypes';
+import { ToastTypes } from '../../common/interfaces/toast';
 import { displayToast } from '../actions/toastAction';
-import {store } from '../../../store';
+import {store } from '../store';
 import type { Middleware } from '@reduxjs/toolkit';
 
 /**

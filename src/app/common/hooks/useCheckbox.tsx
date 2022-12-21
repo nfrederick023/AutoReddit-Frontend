@@ -1,4 +1,3 @@
-
 import { Dispatch, SetStateAction, useState } from 'react';
 
 /**
@@ -6,43 +5,60 @@ import { Dispatch, SetStateAction, useState } from 'react';
  * @param initialState the intial check state of the checkboxes
  * @returns a utility class containing the necassary functions needed for useCheckbox 
  */
-export const useCheckbox = (initialState: Map<string, Map<string, boolean>>): [CheckBoxUtility] => {
-  const [state, setState] = useState<Map<string, Map<string, boolean>>>(initialState);
+export const useCheckbox = <T extends CheckboxBase>(initialState: Map<string, Map<string, T>>): [CheckBoxUtility<T>] => {
+  const [state, setState] = useState<Map<string, Map<string, T>>>(initialState);
 
   return [new CheckBoxUtility(state, setState)];
 };
 
+export class CheckboxBase {
+  private checked: boolean;
+
+  constructor(isChecked: boolean) {
+    this.checked = isChecked;
+  }
+
+  public isChecked = (): boolean => {
+    return this.checked;
+  };
+
+  public setChecked = (newCheckedState: boolean): void => {
+    this.checked = newCheckedState;
+  };
+
+  public check = (): void => {
+    this.checked = !this.checked;
+  };
+}
 /**
  *  Class which contains the necassary functions needed for useCheckbox 
  */
-class CheckBoxUtility {
-  public checkedState: Map<string, Map<string, boolean>>;
-  public setState: Dispatch<SetStateAction<Map<string, Map<string, boolean>>>>;
+class CheckBoxUtility<T extends CheckboxBase> {
+  private setState: Dispatch<SetStateAction<Map<string, Map<string, T>>>>;
+  private checkedState: Map<string, Map<string, T>>;
 
-  public constructor(checkedState: Map<string, Map<string, boolean>>, setState: Dispatch<SetStateAction<Map<string, Map<string, boolean>>>>) {
-    this.checkedState = checkedState;
+  public constructor(state: Map<string, Map<string, T>>, setState: Dispatch<SetStateAction<Map<string, Map<string, T>>>>) {
+    this.checkedState = state;
     this.setState = setState;
   }
 
-  public addCheckboxes = (boxesToAdd: string[][]): void => {
-    const newCheckedState: Map<string, Map<string, boolean>> = new Map();
-    boxesToAdd.forEach(box => {
-      console.log('here');
-      if (this.checkedState.get(box[0])?.has(box[1])) {
-        console.log('bjfdbsaj');
-        const res = !!this.checkedState.get(box[0])?.get(box[1]);
-        console.log('bjfdbsaj');
-        console.log('bjfdbsaj');
-      }
-      const exsistingState = this.checkedState.get(box[0])?.has(box[1]) ? !!this.checkedState.get(box[0])?.get(box[1]) : false;
-      const childMap = newCheckedState.get(box[0]);
-      if (childMap) {
-        newCheckedState.set(box[0], childMap.set(box[1], exsistingState));
-      } else {
-        newCheckedState.set(box[0], new Map([[box[1], exsistingState]]));
-      }
+  public updateCheckedState = (): void => {
+    this.setState(new Map(this.checkedState));
+  };
+
+  public setCheckboxState = (newState: Map<string, Map<string, T>>): void => {
+    this.checkedState.forEach((child, parentName) => {
+      child.forEach((state, childName) => {
+        if (newState.get(parentName)?.has(childName)) {
+          newState.set(parentName, newState.get(parentName)?.set(childName, state) || new Map());
+        }
+      });
     });
-    this.setState(newCheckedState);
+    this.setState(newState);
+  };
+
+  public getCheckboxState = (): Map<string, Map<string, T>> => {
+    return this.checkedState;
   };
 
   /**
@@ -51,12 +67,14 @@ class CheckBoxUtility {
    * @param parent is the parent checkbox
    */
   public checkAllWithinParent = (parent: string): void => {
-    const childCheckState = this.checkedState.get(parent) || new Map([]);
-    if (this.isIndeterminate(parent))
-      this.checkedState.get(parent)?.forEach((value, key) => { this.checkedState.set(parent, this.checkedState.get(parent)?.set(key, true) || new Map()); });
-    else
-      childCheckState.forEach((value, key) => { this.checkedState.set(parent, childCheckState.set(key, !value)); });
-    this.setState(new Map(this.checkedState));
+    const parentIndeterminate = this.isParentIndeterminate(parent);
+    this.checkedState.get(parent)?.forEach((childCheckbox) => {
+      if (parentIndeterminate)
+        childCheckbox.setChecked(true);
+      else
+        childCheckbox.check();
+    });
+    this.updateCheckedState();
   };
 
   /**
@@ -66,6 +84,7 @@ class CheckBoxUtility {
    */
   public checkAll = (): void => {
     this.checkedState.forEach((i, j) => this.checkAllWithinParent(j));
+    this.updateCheckedState();
   };
 
   /**
@@ -75,9 +94,8 @@ class CheckBoxUtility {
    * @param child  is the child checkbox 
    */
   public checkOne = (parent: string, child: string): void => {
-    const childCheckState = this.checkedState.get(parent) || new Map([[child, false]]);
-    const updatedState = new Map(this.checkedState.set(parent, childCheckState.set(child, !childCheckState.get(child))));
-    this.setState(updatedState);
+    this.checkedState?.get(parent)?.get(child)?.check();
+    this.updateCheckedState();
   };
 
   /**
@@ -88,12 +106,7 @@ class CheckBoxUtility {
    * @returns the check state of the child checkbox
    */
   public isChecked = (parent: string, child: string): boolean => {
-    if (!this.checkedState.get(parent)) {
-      const updatedState = new Map(this.checkedState.set(parent, new Map([[child, false]])));
-      this.setState(updatedState);
-    }
-
-    return !!this.checkedState.get(parent)?.get(child);
+    return !!this.checkedState.get(parent)?.get(child)?.isChecked();
   };
 
   /**
@@ -102,11 +115,11 @@ class CheckBoxUtility {
    * @param parent is the parent checkbox
    * @returns true if the parent checkbox state is indeterminate
    */
-  public isIndeterminate = (parent: string): boolean => {
+  public isParentIndeterminate = (parent: string): boolean => {
     if (this.isAllChecked(parent))
       return false;
 
-    return !![...this.checkedState?.get(parent) || []].some(checked => checked[1]);
+    return !![...this.checkedState?.get(parent) || []].some(checked => checked[1].isChecked());
   };
 
   /**
@@ -116,7 +129,7 @@ class CheckBoxUtility {
    * @returns true if the childern check boxes within the parent checkbox are all checked
    */
   public isAllChecked = (parent: string): boolean => {
-    return ![...this.checkedState?.get(parent) || []].filter(([, v]) => !v).length;
+    return ![...this.checkedState?.get(parent) || []].filter(([, v]) => !v.isChecked()).length;
   };
 
   /**
@@ -126,7 +139,7 @@ class CheckBoxUtility {
    * @returns true if any of the childern check boxes within the parent checkbox are checked
    */
   public isAnyChildChecked = (parent: string): boolean => {
-    return this.isIndeterminate(parent) || this.isAllChecked(parent);
+    return this.isParentIndeterminate(parent) || this.isAllChecked(parent);
   };
 
   /**
@@ -138,11 +151,19 @@ class CheckBoxUtility {
     return !![...this.checkedState].find(([k]) => this.isAnyChildChecked(k));
   };
 
+  public getChildState = (parent: string, child: string): T | undefined => {
+    return this.checkedState.get(parent)?.get(child);
+  };
+
+  public updateState = (action: (...args: unknown[]) => unknown): void => {
+    action();
+    this.updateCheckedState();
+  };
 
   /**
-   * Returns a map of all the checked boxes
+   * Returns a matrix of all the checked boxes
    * 
-   * @returns the map of all checked boxes
+   * @returns the matrix of all checked boxes
    */
   public getAllChecked = (): string[][] => {
     const checkedBoxes: string[][] = [];

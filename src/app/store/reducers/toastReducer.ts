@@ -1,4 +1,4 @@
-import { ToastState, ToastTypes } from '../../common/interfaces/toastTypes';
+import { ToastState, ToastTypes } from '../../common/interfaces/toast';
 import { createAction, createReducer } from '@reduxjs/toolkit';
 
 const dispatchToast = createAction<ToastState>('dispatchToast');

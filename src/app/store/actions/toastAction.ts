@@ -1,4 +1,4 @@
-import { ToastState, ToastTypes } from '../../common/interfaces/toastTypes';
+import { ToastState, ToastTypes } from '../../common/interfaces/toast';
 import { createAction } from '@reduxjs/toolkit';
 
 export const displayToast = createAction('dispatchToast', ( open: boolean, message: string, toastType: ToastTypes) => {
@@ -9,7 +9,5 @@ export const displayToast = createAction('dispatchToast', ( open: boolean, messa
          toastType
    };
 
-  return {
-   payload
-  };
+  return { payload };
 });

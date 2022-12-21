@@ -1,4 +1,4 @@
-import { SubredditCategory, SubredditDetails} from '../../common/interfaces/subredditListTypes';
+import { SubredditCategory, SubredditDetails} from '../../common/interfaces/subredditList';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const subredditListAPI = createApi({
