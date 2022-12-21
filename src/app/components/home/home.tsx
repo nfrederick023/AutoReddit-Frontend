@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Autocomplete, Backdrop, Box, Button, Card, CardContent, CircularProgress, Container, Divider, FormControlLabel, Grid, InputAdornment, RadioGroup, Stack, TextField, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, Card, CardContent, Container, Divider, FormControlLabel, Grid, InputAdornment, RadioGroup, Stack, TextField, Typography } from '@mui/material';
 import { BpCheckbox } from '../../common/components/styled/styledCheckbox';
 import { BpRadio } from '../../common/components/styled/styledRadioButton';
 import { SelectedSubreddit } from '../../common/interfaces/home';

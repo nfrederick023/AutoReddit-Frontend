@@ -1,5 +1,4 @@
 import { LoaderState } from '../../common/interfaces/loader';
-import { ToastState } from '../../common/interfaces/toast';
 import { createAction, createReducer } from '@reduxjs/toolkit';
 
 const dispatchToast = createAction<LoaderState>('dispatchLoader');
