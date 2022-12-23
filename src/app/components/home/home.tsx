@@ -2,11 +2,11 @@ import * as React from 'react';
 import { Autocomplete, Box, Button, Card, CardContent, Container, Divider, FormControlLabel, Grid, InputAdornment, RadioGroup, Stack, TextField, Typography } from '@mui/material';
 import { BpCheckbox } from '../../common/components/styled/styledCheckbox';
 import { BpRadio } from '../../common/components/styled/styledRadioButton';
+import { CheckboxItemBase, useCheckbox } from '../../common/hooks/useCheckbox';
 import { SelectedSubreddit } from '../../common/interfaces/home';
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from '../../common/components/styled/styledAccordion';
 import { SubredditCategory, SubredditDetails, SubredditInfo } from '../../common/interfaces/subredditList';
 import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
-import { useCheckbox } from '../../common/hooks/useCheckbox';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -20,7 +20,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
   const [sortedSubreddits, setSortedSubreddits] = useState<SubredditCategory[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [checkBoxUtility] = useCheckbox<SelectedSubreddit>(new Map());
+  const [checkBoxUtility] = useCheckbox<SelectedSubreddit>([]);
 
   /* Functions */
   const addSubredditSubmit = async (data: SubredditDetails): Promise<void> => { setLoading(true); await addSubreddit(data); refetch(); };
@@ -50,14 +50,14 @@ const HomePage: React.FC<Record<string, never>> = () => {
     });
 
     // creates matrix of subreddits to add as checkboxes
-    const checkedState: Map<string, Map<string, SelectedSubreddit>> = new Map();
+    const checkedState: CheckboxItemBase<SelectedSubreddit>[] = [];
     sortedData.forEach((category) => {
       category.subreddits.forEach((subreddit) => {
-        checkedState.set(category.categoryName, checkedState.get(category.categoryName)?.set(subreddit.name, createSelectedSubreddit(subreddit)) || new Map([[subreddit.name, createSelectedSubreddit(subreddit)]]));
+        checkedState.push({ name: subreddit.name, section: category.categoryName, properties: createSelectedSubreddit(subreddit) });
       });
     });
 
-    checkBoxUtility.setCheckboxState(checkedState);
+    checkBoxUtility.updateItems(checkedState);
     setSortedSubreddits(sortedData);
   };
 
@@ -73,12 +73,9 @@ const HomePage: React.FC<Record<string, never>> = () => {
 
   return (
     <>
-
-
-
       <Stack direction="row" spacing={2} >
         <Typography variant='h6' >
-          Subreddits
+          Dashboard
         </Typography>
       </Stack>
 
@@ -104,9 +101,9 @@ const HomePage: React.FC<Record<string, never>> = () => {
                   label="Select All"
                   control={
                     <BpCheckbox
-                      checked={checkBoxUtility.isAllChecked(category.categoryName)}
-                      indeterminate={checkBoxUtility.isParentIndeterminate(category.categoryName)}
-                      onChange={(): void => checkBoxUtility.checkAllWithinParent(category.categoryName)}
+                      checked={checkBoxUtility.isAllInSectionChecked(category.categoryName)}
+                      indeterminate={checkBoxUtility.isSectionIndeterminate(category.categoryName)}
+                      onChange={(): void => checkBoxUtility.checkAllInSection(category.categoryName)}
                     />
                   }
                 />
@@ -122,7 +119,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                             <BpCheckbox
                               checked={checkBoxUtility.isChecked(category.categoryName, subreddit.name)}
                               onChange={(): void => {
-                                checkBoxUtility.checkOne(category.categoryName, subreddit.name);
+                                checkBoxUtility.handleChange(() => checkBoxUtility.checkOne(category.categoryName, subreddit.name));
                               }}
                             />
                           }
@@ -132,7 +129,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                   })}
                 </Grid>
 
-                {checkBoxUtility.isAnyChildChecked(category.categoryName) ? <Divider sx={{ w: '100%', mb: 2 }} /> : <></>}
+                {checkBoxUtility.isAnyInSectionChecked(category.categoryName) ? <Divider sx={{ w: '100%', mb: 2 }} /> : <></>}
 
                 {/* Subreddit Card */}
                 <Grid container spacing={{ xs: 2 }} columns={{ xs: 4, md: 12 }} >
@@ -164,21 +161,23 @@ const HomePage: React.FC<Record<string, never>> = () => {
                                   {/* Flairs */}
                                   < RadioGroup
                                     name="radio-buttons-group"
-                                    value={checkBoxUtility.getCheckboxState().get(category.categoryName)?.get(subreddit.name)?.getFlair()}
+                                    value={checkBoxUtility.getItemsBySectionAndName(category.categoryName, subreddit.name)?.properties.getFlair()}
                                   >
                                     {subreddit.flairs.map((flair) => {
                                       return (
-                                        <FormControlLabel key={`${category.categoryName}_${subreddit.name}_${flair.name}`}
+                                        <FormControlLabel
+                                          key={`${category.categoryName}_${subreddit.name}_${flair.name}`}
                                           value={flair.name}
+                                          label={flair.name}
                                           control={
                                             <BpRadio
-                                              onChange={(): void => { checkBoxUtility.updateState(() => { checkBoxUtility.getChildState(category.categoryName, subreddit.name)?.setFlair(flair.name); }); }}
+                                              onChange={(): void => { checkBoxUtility.handleChange(() => { checkBoxUtility.getItemsBySectionAndName(category.categoryName, subreddit.name)?.properties.setFlair(flair.name); }); }}
                                             />
                                           }
-                                          label={flair.name} />
+                                        />
                                       );
-                                    })
                                     }
+                                    )}
 
                                   </RadioGroup>
 
@@ -271,10 +270,81 @@ const HomePage: React.FC<Record<string, never>> = () => {
           color="error"
           type='submit'
           disabled={!checkBoxUtility.isAnyChecked()}
-          onClick={(): void => { deleteSubredditSubmit(checkBoxUtility.getAllChecked().map((checkedState) => { return { categoryName: checkedState[0], subredditName: checkedState[1] }; })); }}
+          onClick={(): void => { deleteSubredditSubmit(checkBoxUtility.getChecked().map((selected): SubredditDetails => { return { categoryName: selected.section, subredditName: selected.name }; })); }}
         >
           Delete Selected Subreddits
         </Button>
+      </Box>
+
+      <Divider sx={{ width: '100%', marginBottom: 2, marginTop: 2 }} />
+
+      {/* Create Post Form */}
+      <Typography>
+        Selected Subreddits:
+        {checkBoxUtility.getChecked().map((category, index) => {
+          return (
+            <Box key={index + 'selected'}>
+
+            </Box>
+          );
+        })
+        }
+      </Typography>
+      <Box m='10px'>
+        <Box mb='10px'>
+          <form onSubmit={addSubredditHandleSubmit(addSubredditSubmit)}>
+            <Grid container spacing={{ xs: 2 }} columns={{ xs: 3, md: 12 }}>
+
+              {/* Subreddit Name */}
+              <Grid item xs={3} >
+                <Box height="100%" width="100%">
+                  <Autocomplete
+                    freeSolo
+                    id="add-subreddit-textfield"
+                    options={[]}
+                    renderInput={(params): React.ReactNode => {
+                      params.InputProps.startAdornment = <InputAdornment position="start">r/</InputAdornment>;
+                      return (
+                        <TextField
+                          label="Subreddit"
+                          variant="standard"
+                          {...params}
+                          {...addSubredditRegister('subredditName')}
+                        />
+                      );
+                    }
+                    }
+                  />
+                </Box>
+              </Grid>
+
+              {/* Category */}
+              <Grid item xs={3}  >
+                <Box height="100%" width="100%">
+                  <Autocomplete
+                    freeSolo
+                    id="add-category-textfield"
+                    options={data?.map(category => category.categoryName) || []}
+                    renderInput={(params): React.ReactNode => <TextField {...params} variant="standard" label="Category"{...addSubredditRegister('categoryName')} />}
+                  />
+                </Box>
+              </Grid>
+
+              {/* Submit Button */}
+              <Grid item xs={3} >
+                <Box
+                  height="100%"
+                  width="100%"
+                  display="flex"
+                  justifyContent="flex-end"
+                  flexDirection="column"
+                >
+                  <Button variant="outlined" type='submit' >Create Post</Button>
+                </Box>
+              </Grid>
+            </Grid>
+          </form>
+        </Box>
       </Box>
     </>
   );

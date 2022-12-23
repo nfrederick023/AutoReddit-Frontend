@@ -1,12 +1,10 @@
-import { CheckboxBase } from '../hooks/useCheckbox';
 import { SubredditInfo } from './subredditList';
 
-export class SelectedSubreddit extends CheckboxBase {
+export class SelectedSubreddit {
   private selectedFlair: string;
   private postTitle: string;
 
   constructor(subreddit: SubredditInfo) {
-    super(false);
     this.selectedFlair = subreddit.flairs[0]?.name || 'n/a';
     this.postTitle = '';
   }

@@ -5,176 +5,134 @@ import { Dispatch, SetStateAction, useState } from 'react';
  * @param initialState the intial check state of the checkboxes
  * @returns a utility class containing the necassary functions needed for useCheckbox 
  */
-export const useCheckbox = <T extends CheckboxBase>(initialState: Map<string, Map<string, T>>): [CheckBoxUtility<T>] => {
-  const [state, setState] = useState<Map<string, Map<string, T>>>(initialState);
+export const useCheckbox = <T,>(initialItems: CheckboxItemBase<T>[]): [CheckBoxUtility<T>] => {
 
-  return [new CheckBoxUtility(state, setState)];
+  const [state, setState] = useState<CheckboxItemBase<T>[]>(initialItems);
+  const checkBoxUtility = new CheckBoxUtility(state, setState);
+
+  return [checkBoxUtility];
 };
 
-export class CheckboxBase {
-  private checked: boolean;
 
-  constructor(isChecked: boolean) {
-    this.checked = isChecked;
-  }
-
-  public isChecked = (): boolean => {
-    return this.checked;
-  };
-
-  public setChecked = (newCheckedState: boolean): void => {
-    this.checked = newCheckedState;
-  };
-
-  public check = (): void => {
-    this.checked = !this.checked;
-  };
+export interface CheckboxItemBase<T> {
+  name?: string,
+  section?: string,
+  isChecked?: boolean,
+  properties?: T
 }
+
+export interface CheckboxItem<T> {
+  name: string,
+  section: string,
+  isChecked: boolean,
+  properties: T
+}
+
 /**
  *  Class which contains the necassary functions needed for useCheckbox 
  */
-class CheckBoxUtility<T extends CheckboxBase> {
-  private setState: Dispatch<SetStateAction<Map<string, Map<string, T>>>>;
-  private checkedState: Map<string, Map<string, T>>;
+class CheckBoxUtility<T> {
+  private setState: Dispatch<SetStateAction<CheckboxItemBase<T>[]>>;
+  private items: CheckboxItem<T>[];
 
-  public constructor(state: Map<string, Map<string, T>>, setState: Dispatch<SetStateAction<Map<string, Map<string, T>>>>) {
-    this.checkedState = state;
+  public constructor(items: CheckboxItemBase<T>[], setState: Dispatch<SetStateAction<CheckboxItemBase<T>[]>>) {
+    this.items = this.setDefaultValues(items);
     this.setState = setState;
   }
 
-  public updateCheckedState = (): void => {
-    this.setState(new Map(this.checkedState));
+  private updateItemState = (): void => {
+    this.setState([...this.items]);
   };
 
-  public setCheckboxState = (newState: Map<string, Map<string, T>>): void => {
-    this.checkedState.forEach((child, parentName) => {
-      child.forEach((state, childName) => {
-        if (newState.get(parentName)?.has(childName)) {
-          newState.set(parentName, newState.get(parentName)?.set(childName, state) || new Map());
-        }
-      });
+  public getItemsBySection = (section: string): CheckboxItem<T>[] => {
+    return this.items.filter(item => item.section === section);
+  };
+
+  public handleChange = (fn: (...args: unknown[]) => unknown): void => { fn(); this.updateItemState(); };
+
+
+  public getItemsBySectionAndName = (section: string, name: string): CheckboxItem<T> | undefined => {
+    return this.items.find(item => item.name === name && item.section === section);
+  };
+
+  private setDefaultValues = (items: CheckboxItemBase<T>[]): CheckboxItem<T>[] => {
+    items.forEach((item, index) => {
+      if (typeof (item.isChecked) === 'undefined')
+        items[index].isChecked = false;
+      if (!item.section)
+        items[index].section = `${index}_checkbox_section`;
+      if (!item.name)
+        items[index].section = `${index}_checkbox`;
     });
-    this.setState(newState);
+
+    return items as CheckboxItem<T>[];
   };
 
-  public getCheckboxState = (): Map<string, Map<string, T>> => {
-    return this.checkedState;
+  public updateItems = (newItems: CheckboxItemBase<T>[] | undefined): void => {
+    const updatedItems = this.setDefaultValues(newItems || []);
+    updatedItems.forEach((item, index) => {
+      const exsistingItem = this.items.find(newItem => item.name === newItem.name && item.section === newItem.section);
+      if (exsistingItem)
+        updatedItems[index] = exsistingItem;
+    });
+
+    this.setState(updatedItems);
   };
 
-  /**
-   * Checks or unchecks all the boxes of a given parent checkbox based on it's current check state. 
-   * 
-   * @param parent is the parent checkbox
-   */
-  public checkAllWithinParent = (parent: string): void => {
-    const parentIndeterminate = this.isParentIndeterminate(parent);
-    this.checkedState.get(parent)?.forEach((childCheckbox) => {
-      if (parentIndeterminate)
-        childCheckbox.setChecked(true);
+
+  public getItems = (): CheckboxItem<T>[] => {
+    return this.items;
+  };
+
+  public checkAllInSection = (section: string): void => {
+    const isIndeterminate = this.isSectionIndeterminate(section);
+    this.getItemsBySection(section).forEach((item) => {
+      if (isIndeterminate)
+        item.isChecked = true;
       else
-        childCheckbox.check();
+        item.isChecked = !item.isChecked;
     });
-    this.updateCheckedState();
+    this.updateItemState();
   };
 
-  /**
-   * Checks or unchecks all the boxes based on their current check state. 
-   * 
-   * @param parent is the parent checkbox
-   */
   public checkAll = (): void => {
-    this.checkedState.forEach((i, j) => this.checkAllWithinParent(j));
-    this.updateCheckedState();
+    this.items.forEach((item) => this.checkAllInSection(item.section));
+    this.updateItemState();
   };
 
-  /**
-   * Checks a single given child checkbox.
-   * 
-   * @param parent is the parent checkbox
-   * @param child  is the child checkbox 
-   */
-  public checkOne = (parent: string, child: string): void => {
-    this.checkedState?.get(parent)?.get(child)?.check();
-    this.updateCheckedState();
+  public checkOne = (section: string, name: string): void => {
+    const item = this.getItemsBySectionAndName(section, name);
+    if (item) {
+      item.isChecked = !item.isChecked;
+      this.updateItemState();
+    }
   };
 
-  /**
-   * Determines if a given child checkbox is checked.
-   * 
-   * @param parent is the parent checkbox
-   * @param child  is the child checkbox
-   * @returns the check state of the child checkbox
-   */
-  public isChecked = (parent: string, child: string): boolean => {
-    return !!this.checkedState.get(parent)?.get(child)?.isChecked();
-  };
-
-  /**
-   * Determines if the parent checkbox state is indeterminate.
-   * 
-   * @param parent is the parent checkbox
-   * @returns true if the parent checkbox state is indeterminate
-   */
-  public isParentIndeterminate = (parent: string): boolean => {
-    if (this.isAllChecked(parent))
+  public isSectionIndeterminate = (section: string): boolean => {
+    if (this.isAllInSectionChecked(section))
       return false;
 
-    return !![...this.checkedState?.get(parent) || []].some(checked => checked[1].isChecked());
+    return this.getItemsBySection(section).some(item => item.isChecked);
   };
 
-  /**
-   * Determines if all of the childern checkboxs within a given parent checkbox are checked.
-   * 
-   * @param parent is the parent checkbox
-   * @returns true if the childern check boxes within the parent checkbox are all checked
-   */
-  public isAllChecked = (parent: string): boolean => {
-    return ![...this.checkedState?.get(parent) || []].filter(([, v]) => !v.isChecked()).length;
+  public isAllInSectionChecked = (section: string): boolean => {
+    return !this.getItemsBySection(section).filter(item => !item.isChecked).length;
   };
 
-  /**
-   * Determines if any of the childern checkboxs within a given parent checkbox are checked.
-   * 
-   * @param parent is the parent checkbox
-   * @returns true if any of the childern check boxes within the parent checkbox are checked
-   */
-  public isAnyChildChecked = (parent: string): boolean => {
-    return this.isParentIndeterminate(parent) || this.isAllChecked(parent);
+  public isAnyInSectionChecked = (section: string): boolean => {
+    return this.isSectionIndeterminate(section) || this.isAllInSectionChecked(section);
   };
 
-  /**
-   * Determines if any checkbox is checked
-   * 
-   * @returns true if any check box is checked
-   */
   public isAnyChecked = (): boolean => {
-    return !![...this.checkedState].find(([k]) => this.isAnyChildChecked(k));
+    return !!this.items.find((item) => item.isChecked);
   };
 
-  public getChildState = (parent: string, child: string): T | undefined => {
-    return this.checkedState.get(parent)?.get(child);
+  public getChecked = (): CheckboxItem<T>[] => {
+    return this.items.filter(item => item.isChecked);
   };
 
-  public updateState = (action: (...args: unknown[]) => unknown): void => {
-    action();
-    this.updateCheckedState();
-  };
-
-  /**
-   * Returns a matrix of all the checked boxes
-   * 
-   * @returns the matrix of all checked boxes
-   */
-  public getAllChecked = (): string[][] => {
-    const checkedBoxes: string[][] = [];
-    this.checkedState.forEach((v, k) => {
-      v.forEach((i, j) => {
-        if (this.isChecked(k, j)) {
-          checkedBoxes.push([k, j]);
-        }
-      });
-    });
-    return checkedBoxes;
+  public isChecked = (section: string, name: string): boolean => {
+    return !!this.getItemsBySectionAndName(section, name)?.isChecked;
   };
 }
 
