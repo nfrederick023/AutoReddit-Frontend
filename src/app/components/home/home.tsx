@@ -1,14 +1,19 @@
 import * as React from 'react';
-import { Autocomplete, Box, Button, Card, CardContent, Container, Divider, FormControlLabel, Grid, InputAdornment, RadioGroup, Stack, TextField, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, Checkbox, Container, Divider, FormControlLabel, Grid, InputAdornment, ListItemText, Select, SelectChangeEvent, Stack, Table, TableBody, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { BpCheckbox } from '../../common/components/styled/styledCheckbox';
-import { BpRadio } from '../../common/components/styled/styledRadioButton';
-import { CheckboxItemBase, useCheckbox } from '../../common/hooks/useCheckbox';
-import { SelectedSubreddit } from '../../common/interfaces/home';
+import { DashboardCellBody, DashboardCellHeader } from '../../common/components/styled/styledTableCell';
+import { ItemDetailsBase, useCheckbox } from '../../common/hooks/useCheckbox';
+import { Link } from '@mui/material';
+import { MenuItem } from '@mui/material';
+import { ReactNode } from 'react';
+import { SelectedSubreddit, Tags } from '../../common/interfaces/home';
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from '../../common/components/styled/styledAccordion';
 import { SubredditCategory, SubredditDetails, SubredditInfo } from '../../common/interfaces/subredditList';
 import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import InfoIcon from '@mui/icons-material/Info';
+import LinkIcon from '@mui/icons-material/Link';
 
 const HomePage: React.FC<Record<string, never>> = () => {
 
@@ -43,21 +48,21 @@ const HomePage: React.FC<Record<string, never>> = () => {
     // sorts subreddits
     sortedData.forEach(category => {
       category.subreddits = Object.values(category.subreddits || []).sort((a, b) => {
-        const textA = a.name.toUpperCase();
-        const textB = b.name.toUpperCase();
+        const textA = a.subredditName.toUpperCase();
+        const textB = b.subredditName.toUpperCase();
         return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
       });
     });
 
     // creates matrix of subreddits to add as checkboxes
-    const checkedState: CheckboxItemBase<SelectedSubreddit>[] = [];
+    const checkedState: ItemDetailsBase<SelectedSubreddit>[] = [];
     sortedData.forEach((category) => {
       category.subreddits.forEach((subreddit) => {
-        checkedState.push({ name: subreddit.name, section: category.categoryName, properties: createSelectedSubreddit(subreddit) });
+        checkedState.push({ name: subreddit.subredditName, section: category.categoryName, properties: createSelectedSubreddit(subreddit) });
       });
     });
 
-    checkBoxUtility.updateItems(checkedState);
+    checkBoxUtility.setUtility(checkedState);
     setSortedSubreddits(sortedData);
   };
 
@@ -79,130 +84,187 @@ const HomePage: React.FC<Record<string, never>> = () => {
         </Typography>
       </Stack>
 
-      <Divider sx={{ width: '100%', marginBottom: 2, marginTop: 1 }} />
+      <Divider sx={{ width: '100%', marginBottom: 1, marginTop: 1 }} />
 
       {!sortedSubreddits.length ? <Typography>No Subreddits Found.</Typography> : <></>}
 
-      {sortedSubreddits.map((category) => {
+      {checkBoxUtility.getSections().map((section) => {
         return (
 
-          <Container key={category.categoryName} disableGutters >
-
-            <StyledAccordion expanded={!expanded?.includes(category.categoryName)} onChange={(): void => handleExpand(category.categoryName)} >
+          <Container key={section.getName()} disableGutters >
+            <StyledAccordion expanded={!expanded?.includes(section.getName())} onChange={(): void => handleExpand(section.getName())} >
 
               {/* Category Header */}
               <StyledAccordionSummary id="panel1d-header">
-                <Typography>{category.categoryName}</Typography>
+                <Typography>{section.getName()}</Typography>
               </StyledAccordionSummary>
 
               {/* Select All Checkbox */}
-              <StyledAccordionDetails>
-                <FormControlLabel
-                  label="Select All"
-                  control={
-                    <BpCheckbox
-                      checked={checkBoxUtility.isAllInSectionChecked(category.categoryName)}
-                      indeterminate={checkBoxUtility.isSectionIndeterminate(category.categoryName)}
-                      onChange={(): void => checkBoxUtility.checkAllInSection(category.categoryName)}
-                    />
-                  }
-                />
-
-                {/* Subreddit Checkbox */}
-                <Grid container columns={{ xs: 6, sm: 12 }} sx={{ mb: '15px' }}>
-                  {category.subreddits.map((subreddit) => {
-                    return (
-                      <Grid item xs={6} key={subreddit.name + ('_form')} >
-                        <FormControlLabel
-                          label={('r/') + subreddit.name}
-                          control={
-                            <BpCheckbox
-                              checked={checkBoxUtility.isChecked(category.categoryName, subreddit.name)}
-                              onChange={(): void => {
-                                checkBoxUtility.handleChange(() => checkBoxUtility.checkOne(category.categoryName, subreddit.name));
-                              }}
+              <StyledAccordionDetails >
+                <TableContainer >
+                  <Table >
+                    <TableHead>
+                      <TableRow>
+                        <DashboardCellHeader width="25%">
+                          <Box sx={{ display: 'flex', alignItems: 'center' }} >
+                            <FormControlLabel
+                              label="Subreddit"
+                              sx={{ width: '100%', height: '100%', alignItems: 'end', ml: '-6px' }}
+                              control={
+                                <BpCheckbox
+                                  sx={{ pl: 1, pb: '5px' }}
+                                  checked={section.isAllSelected()}
+                                  indeterminate={section.isIndeterminate()}
+                                  onChange={(): void => section.selectAll()}
+                                />
+                              }
                             />
-                          }
-                        />
-                      </Grid>
-                    );
-                  })}
-                </Grid>
+                          </Box>
+                        </DashboardCellHeader>
+                        <DashboardCellHeader align='right' width="20%">
+                          <Typography>
+                            Flair
+                          </Typography>
+                        </DashboardCellHeader>
+                        <DashboardCellHeader align="right" width="20%">
+                          <Typography>
+                            Tags
+                          </Typography>
+                        </DashboardCellHeader>
 
-                {checkBoxUtility.isAnyInSectionChecked(category.categoryName) ? <Divider sx={{ w: '100%', mb: 2 }} /> : <></>}
+                        <DashboardCellHeader align="right">
+                          <Typography>
+                            Post Title
+                          </Typography>
+                        </DashboardCellHeader>
+                        <DashboardCellHeader align="right" width="1%" />
+                        <DashboardCellHeader align="right" width="1%" />
+                      </TableRow>
+                    </TableHead>
+                    <TableBody >
 
-                {/* Subreddit Card */}
-                <Grid container spacing={{ xs: 2 }} columns={{ xs: 4, md: 12 }} >
-                  {category.subreddits.map((subreddit) => {
 
-                    return (
-                      checkBoxUtility.isChecked(category.categoryName, subreddit.name) ?
-                        <Grid item xs={6} key={subreddit.name + ('_form')} overflow="clip">
-                          <Card variant="outlined" sx={{ minHeight: '100%', minWidth: '100%' }}>
-                            <CardContent>
+                      {/* Subreddit Checkbox */}
 
-                              {/* Name */}
-                              <Box sx={{ display: 'flex', wrap: 'flex-wrap' }}>
-                                <Typography variant="h5" component="div" >
-                                  r/{subreddit.name}
-                                </Typography>
-                                {subreddit.isNSFW ?
-                                  <Typography sx={{ mb: 1.5, pl: '5px' }} color="red">
+                      {/* Subreddit Card */}
+                      {section.getItems().map((subreddit) => {
+
+                        return (
+                          <TableRow key={`${section.getName()}_${subreddit.getName()}_form`}>
+
+                            <DashboardCellBody align="right">
+                              <Box sx={{ display: 'flex', alignItems: 'center' }} >
+                                <FormControlLabel
+                                  sx={{ height: '100%', alignItems: 'end', ml: '-6px', mr: '4px' }}
+                                  label={('r/') + subreddit.getName()}
+                                  control={
+                                    <BpCheckbox
+                                      sx={{ pl: 1, pb: '5px' }}
+                                      checked={subreddit.getIsSelected()}
+                                      onChange={(): void => {
+                                        subreddit.selectItem();
+                                      }}
+                                    />
+                                  }
+                                />
+                                {subreddit.getProperties().getInfo().isNSFW ?
+                                  <Typography color="red" display="inline">
                                     R18+
                                   </Typography>
                                   : <></>
                                 }
                               </Box>
+                            </DashboardCellBody>
+                            <DashboardCellBody align="right">
+                              {subreddit.getProperties().getInfo().flairs.length ?
+                                <Autocomplete
+                                  disableClearable
+                                  options={subreddit.getProperties().getInfo().flairs.map(flair => flair.name)}
+                                  onChange={(event, value): void => { subreddit.setProperties(subreddit.getProperties().setFlair(value)); }}
+                                  renderInput={
+                                    (params): React.ReactNode =>
+                                      <TextField {...params}
+                                        variant="standard"
+                                      />
+                                  }
+                                />
+                                :
+                                <Box
+                                  height="100%"
+                                  justifyContent="flex-end"
+                                  flexDirection="column"
+                                >
+                                  <Typography>
+                                    N/A
+                                  </Typography>
+                                </Box>
+                              }
 
-                              <Divider sx={{ width: '100%', marginBottom: 2, marginTop: 2 }} />
-                              {subreddit.flairs.length ?
 
-                                <>
-                                  {/* Flairs */}
-                                  < RadioGroup
-                                    name="radio-buttons-group"
-                                    value={checkBoxUtility.getItemsBySectionAndName(category.categoryName, subreddit.name)?.properties.getFlair()}
+                            </DashboardCellBody>
+                            <DashboardCellBody align="right">
+                              <Select
+                                sx={{ width: '100%' }}
+                                multiple
+                                displayEmpty
+                                variant="standard"
+                                value={subreddit.getProperties().getTags()}
+                                onChange={(event: SelectChangeEvent<Tags[]>): void => { const { target: { value }, } = event; subreddit.setProperties(subreddit.getProperties().setTages(value as Tags[])); }}
+                                renderValue={(selected): ReactNode => {
+                                  if (selected.length === 0) {
+                                    return;
+                                  }
+                                  return selected.join(', ');
+                                }}
+                              >
+                                {[Tags.NSFW, Tags.OC, Tags.SPOILER].map((tag) => (
+                                  <MenuItem
+                                    key={tag}
+                                    value={tag}
                                   >
-                                    {subreddit.flairs.map((flair) => {
-                                      return (
-                                        <FormControlLabel
-                                          key={`${category.categoryName}_${subreddit.name}_${flair.name}`}
-                                          value={flair.name}
-                                          label={flair.name}
-                                          control={
-                                            <BpRadio
-                                              onChange={(): void => { checkBoxUtility.handleChange(() => { checkBoxUtility.getItemsBySectionAndName(category.categoryName, subreddit.name)?.properties.setFlair(flair.name); }); }}
-                                            />
-                                          }
-                                        />
-                                      );
-                                    }
-                                    )}
+                                    <Checkbox checked={subreddit.getProperties().getTags().includes(tag)} />
+                                    <ListItemText primary={tag} />
+                                  </MenuItem>
+                                ))}
+                              </Select>
 
-                                  </RadioGroup>
+                            </DashboardCellBody>
+                            <DashboardCellBody align="right">
 
-                                  <Divider sx={{ width: '100%', marginBottom: 2, marginTop: 2 }} />
-                                </>
-                                : <></>}
+                              <TextField
+                                sx={{ minWidth: '100%', height: '100%' }}
+                                variant="standard"
+                                onChange={(event): void => { subreddit.setProperties(subreddit.getProperties().setTitle(event.target.value)); }}
+                              />
 
-                              {/* Notes */}
-                              <Typography variant="body2">
-                                Notes:   {subreddit.notes}
-                              </Typography>
+                            </DashboardCellBody>
+                            <DashboardCellBody align="right">
 
-                            </CardContent>
-                          </Card>
-                        </Grid>
-                        : <Box key={subreddit.name + ('_form')}></Box>
-                    );
-                  })}
-                  <Box sx={{ minWidth: '49%' }}></Box>
-                </Grid>
+                              {!subreddit.getProperties().getInfo().notes.length ?
+                                <InfoIcon sx={{ position: 'relative', top: '8px' }} />
+                                : <></>
+                              }
+                            </DashboardCellBody>
+                            <DashboardCellBody align="right">
+                              <Link href={`https://www.reddit.com/r/${subreddit.getName()}`} target="_blank" sx={{ position: 'relative', top: '4px' }}>
+                                <LinkIcon sx={{ mt: '8px' }} />
+                              </Link>
+                            </DashboardCellBody>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+
+                  </Table>
+                </TableContainer>
+                <Box sx={{ minWidth: '49%' }}></Box>
 
               </StyledAccordionDetails>
+
             </StyledAccordion>
 
           </Container>
+
         );
       })}
       <Divider sx={{ width: '100%', marginBottom: 2, marginTop: 2 }} />
@@ -214,7 +276,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
             <Grid container spacing={{ xs: 2 }} columns={{ xs: 3, md: 12 }}>
 
               {/* Subreddit Name */}
-              <Grid item xs={3} >
+              <Grid item xs={4} >
                 <Box height="100%" width="100%">
                   <Autocomplete
                     freeSolo
@@ -237,7 +299,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
               </Grid>
 
               {/* Category */}
-              <Grid item xs={3}  >
+              <Grid item xs={4}  >
                 <Box height="100%" width="100%">
                   <Autocomplete
                     freeSolo
@@ -249,7 +311,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
               </Grid>
 
               {/* Submit Button */}
-              <Grid item xs={3} >
+              <Grid item xs={4} >
                 <Box
                   height="100%"
                   width="100%"
@@ -264,74 +326,50 @@ const HomePage: React.FC<Record<string, never>> = () => {
           </form>
         </Box>
 
-        { }
         <Button
           variant="outlined"
           color="error"
           type='submit'
-          disabled={!checkBoxUtility.isAnyChecked()}
-          onClick={(): void => { deleteSubredditSubmit(checkBoxUtility.getChecked().map((selected): SubredditDetails => { return { categoryName: selected.section, subredditName: selected.name }; })); }}
+          disabled={!checkBoxUtility.isAnyItemChecked()}
+          onClick={(): void => {
+            deleteSubredditSubmit(checkBoxUtility.getSelectedSections().flatMap((selected) => { return selected.getSelectedItems().map((item): SubredditDetails => { return { categoryName: selected.getName(), subredditName: item.getName() }; }); }));
+          }}
         >
           Delete Selected Subreddits
         </Button>
       </Box>
 
-      <Divider sx={{ width: '100%', marginBottom: 2, marginTop: 2 }} />
-
       {/* Create Post Form */}
-      <Typography>
-        Selected Subreddits:
-        {checkBoxUtility.getChecked().map((category, index) => {
-          return (
-            <Box key={index + 'selected'}>
-
-            </Box>
-          );
-        })
-        }
-      </Typography>
       <Box m='10px'>
         <Box mb='10px'>
           <form onSubmit={addSubredditHandleSubmit(addSubredditSubmit)}>
             <Grid container spacing={{ xs: 2 }} columns={{ xs: 3, md: 12 }}>
 
-              {/* Subreddit Name */}
-              <Grid item xs={3} >
+              {/* Post Title */}
+              <Grid item xs={4}  >
                 <Box height="100%" width="100%">
-                  <Autocomplete
-                    freeSolo
-                    id="add-subreddit-textfield"
-                    options={[]}
-                    renderInput={(params): React.ReactNode => {
-                      params.InputProps.startAdornment = <InputAdornment position="start">r/</InputAdornment>;
-                      return (
-                        <TextField
-                          label="Subreddit"
-                          variant="standard"
-                          {...params}
-                          {...addSubredditRegister('subredditName')}
-                        />
-                      );
-                    }
-                    }
+                  <TextField
+                    sx={{ width: '100%' }}
+                    label="Post Title"
+                    variant="standard"
                   />
                 </Box>
               </Grid>
 
-              {/* Category */}
-              <Grid item xs={3}  >
+
+              {/* Pixiv Link */}
+              <Grid item xs={4}  >
                 <Box height="100%" width="100%">
-                  <Autocomplete
-                    freeSolo
-                    id="add-category-textfield"
-                    options={data?.map(category => category.categoryName) || []}
-                    renderInput={(params): React.ReactNode => <TextField {...params} variant="standard" label="Category"{...addSubredditRegister('categoryName')} />}
+                  <TextField
+                    sx={{ width: '100%' }}
+                    label="Pixiv Link"
+                    variant="standard"
                   />
                 </Box>
               </Grid>
 
               {/* Submit Button */}
-              <Grid item xs={3} >
+              <Grid item xs={4} >
                 <Box
                   height="100%"
                   width="100%"
@@ -339,7 +377,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                   justifyContent="flex-end"
                   flexDirection="column"
                 >
-                  <Button variant="outlined" type='submit' >Create Post</Button>
+                  <Button variant="outlined" type='submit' >Create Post(s)</Button>
                 </Box>
               </Grid>
             </Grid>

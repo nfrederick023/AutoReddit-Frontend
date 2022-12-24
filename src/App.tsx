@@ -37,7 +37,7 @@ const App: React.FC<Record<string, never>> = () => {
       <ToastComponent />
       <Header />
       <Container
-        maxWidth="md"
+        maxWidth="lg"
         sx={{
           justifyContent: 'center',
           paddingTop: '20px',
