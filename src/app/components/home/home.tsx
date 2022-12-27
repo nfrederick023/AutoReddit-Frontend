@@ -1,19 +1,22 @@
 import * as React from 'react';
-import { Autocomplete, Box, Button, Checkbox, Container, Divider, FormControlLabel, Grid, InputAdornment, ListItemText, Select, SelectChangeEvent, Stack, Table, TableBody, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { Autocomplete, Box, Button, Checkbox, Container, Divider, FormControlLabel, Grid, InputAdornment, InputLabel, ListItemText, Select, SelectChangeEvent, Stack, Table, TableBody, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { BpCheckbox } from '../../common/components/styled/styledCheckbox';
 import { DashboardCellBody, DashboardCellHeader } from '../../common/components/styled/styledTableCell';
+import { DatePicker, DateTimePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { ItemDetailsBase, useCheckbox } from '../../common/hooks/useCheckbox';
 import { Link } from '@mui/material';
 import { MenuItem } from '@mui/material';
-import { ReactNode } from 'react';
+import { ReactElement, ReactNode } from 'react';
 import { SelectedSubreddit, Tags } from '../../common/interfaces/home';
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from '../../common/components/styled/styledAccordion';
 import { SubredditCategory, SubredditDetails, SubredditInfo } from '../../common/interfaces/subredditList';
+import { TextFieldProps } from '@mui/material';
 import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import InfoIcon from '@mui/icons-material/Info';
-import LinkIcon from '@mui/icons-material/Link';
+import LinkIcon from '@mui/icons-material/Link'; import dayjs from 'dayjs';
 
 const HomePage: React.FC<Record<string, never>> = () => {
 
@@ -206,22 +209,15 @@ const HomePage: React.FC<Record<string, never>> = () => {
                               <Select
                                 sx={{ width: '100%' }}
                                 multiple
-                                displayEmpty
                                 variant="standard"
                                 value={subreddit.getProperties().getTags()}
                                 onChange={(event: SelectChangeEvent<Tags[]>): void => { const { target: { value }, } = event; subreddit.setProperties(subreddit.getProperties().setTages(value as Tags[])); }}
                                 renderValue={(selected): ReactNode => {
-                                  if (selected.length === 0) {
-                                    return;
-                                  }
                                   return selected.join(', ');
                                 }}
                               >
                                 {[Tags.NSFW, Tags.OC, Tags.SPOILER].map((tag) => (
-                                  <MenuItem
-                                    key={tag}
-                                    value={tag}
-                                  >
+                                  <MenuItem key={tag} value={tag}>
                                     <Checkbox checked={subreddit.getProperties().getTags().includes(tag)} />
                                     <ListItemText primary={tag} />
                                   </MenuItem>
@@ -269,20 +265,18 @@ const HomePage: React.FC<Record<string, never>> = () => {
       })}
       <Divider sx={{ width: '100%', marginBottom: 2, marginTop: 2 }} />
 
-      {/* Add Subreddit Form */}
-      <Box m='10px'>
+      {/* <Box m='10px'>
         <Box mb='10px'>
           <form onSubmit={addSubredditHandleSubmit(addSubredditSubmit)}>
             <Grid container spacing={{ xs: 2 }} columns={{ xs: 3, md: 12 }}>
 
-              {/* Subreddit Name */}
               <Grid item xs={4} >
                 <Box height="100%" width="100%">
                   <Autocomplete
                     freeSolo
                     id="add-subreddit-textfield"
                     options={[]}
-                    renderInput={(params): React.ReactNode => {
+                    renderInput={(params): ReactNode => {
                       params.InputProps.startAdornment = <InputAdornment position="start">r/</InputAdornment>;
                       return (
                         <TextField
@@ -298,19 +292,17 @@ const HomePage: React.FC<Record<string, never>> = () => {
                 </Box>
               </Grid>
 
-              {/* Category */}
               <Grid item xs={4}  >
                 <Box height="100%" width="100%">
                   <Autocomplete
                     freeSolo
                     id="add-category-textfield"
                     options={data?.map(category => category.categoryName) || []}
-                    renderInput={(params): React.ReactNode => <TextField {...params} variant="standard" label="Category"{...addSubredditRegister('categoryName')} />}
+                    renderInput={(params): ReactNode => <TextField {...params} variant="standard" label="Category"{...addSubredditRegister('categoryName')} />}
                   />
                 </Box>
               </Grid>
 
-              {/* Submit Button */}
               <Grid item xs={4} >
                 <Box
                   height="100%"
@@ -337,50 +329,128 @@ const HomePage: React.FC<Record<string, never>> = () => {
         >
           Delete Selected Subreddits
         </Button>
-      </Box>
+      </Box> */}
 
       {/* Create Post Form */}
+      <Box sx={{ marginLeft: '16px', width: 'calc(100% - 16px)' }}>
+        <Grid container spacing={{ xs: 2 }} columns={{ xs: 3, md: 12 }}>
+
+          <Grid item xs={3}  >
+
+            <Typography>
+              Post Details
+            </Typography>
+          </Grid>
+          <Grid item xs={9}  >
+
+            <Box sx={{ mb: 3, mr: 3, display: 'inline' }}>
+              <TextField
+                sx={{ width: '45%' }}
+                label="Title"
+                variant="standard"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Box>
+
+            <Box sx={{ display: 'inline-flex', width: '30%' }}>
+
+              <InputLabel variant="standard" htmlFor="tags-input" sx={{ transform: ' translate(0, -1.5px) scale(0.75)', position: 'absolute' }} >
+                Tags
+              </InputLabel>
+              <Select
+                sx={{ pt: '16px', width: '100%' }}
+                multiple
+                variant="standard"
+                id='tags-input'
+                value={[Tags.NSFW]}
+                renderValue={(selected): ReactNode => { return selected.join(', '); }}
+              >
+                {[Tags.NSFW, Tags.OC, Tags.SPOILER].map((tag) => (
+                  <MenuItem key={tag} value={tag}>
+                    <Checkbox checked={true} />
+                    <ListItemText primary={tag} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+
+            <Box sx={{ mb: 3 }} />
+
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Date"
+                value={dayjs()}
+                onChange={(): void => { }}
+                renderInput={(params): ReactElement<TextFieldProps> => <TextField {...params} />}
+              />
+              <Box sx={{ mr: 3, display: 'inline' }} />
+              <TimePicker
+                label="Time"
+                value={dayjs().add(30, 'minutes')}
+                onChange={(): void => { }}
+                renderInput={(params): ReactElement<TextFieldProps> => <TextField {...params} />}
+              />
+            </LocalizationProvider>
+          </Grid>
+          <Divider sx={{ width: '100%', marginTop: 2 }} />
+
+          <Grid item xs={3}  >
+            <Typography>
+              Image
+            </Typography>
+          </Grid>
+          <Grid item xs={9}  >
+
+            <Box height="100%" width="100%" display='inline'>
+              <TextField
+                sx={{ width: '45%' }}
+                label="Pixiv Link"
+                variant="standard"
+                InputLabelProps={{ shrink: true }}
+              />
+            </Box>
+            <Divider sx={{ display: 'inline', mr: 5, ml: 5, minHeight: '100%' }} orientation='vertical' />
+            <Button
+              variant="contained"
+              component="label"
+            >
+              Upload File
+              <input
+                type="file"
+                hidden
+              />
+            </Button>
+          </Grid>
+          <Divider sx={{ width: '100%', marginTop: 2 }} />
+
+          <Grid item xs={3}  >
+            <Typography>
+              Comment
+            </Typography>
+          </Grid>
+          <Grid item xs={9}  >
+
+          </Grid>
+        </Grid>
+      </Box>
       <Box m='10px'>
         <Box mb='10px'>
           <form onSubmit={addSubredditHandleSubmit(addSubredditSubmit)}>
-            <Grid container spacing={{ xs: 2 }} columns={{ xs: 3, md: 12 }}>
-
-              {/* Post Title */}
-              <Grid item xs={4}  >
-                <Box height="100%" width="100%">
-                  <TextField
-                    sx={{ width: '100%' }}
-                    label="Post Title"
-                    variant="standard"
-                  />
-                </Box>
-              </Grid>
 
 
-              {/* Pixiv Link */}
-              <Grid item xs={4}  >
-                <Box height="100%" width="100%">
-                  <TextField
-                    sx={{ width: '100%' }}
-                    label="Pixiv Link"
-                    variant="standard"
-                  />
-                </Box>
-              </Grid>
+            {/* Pixiv Link */}
 
-              {/* Submit Button */}
-              <Grid item xs={4} >
-                <Box
-                  height="100%"
-                  width="100%"
-                  display="flex"
-                  justifyContent="flex-end"
-                  flexDirection="column"
-                >
-                  <Button variant="outlined" type='submit' >Create Post(s)</Button>
-                </Box>
-              </Grid>
-            </Grid>
+
+            {/* Submit Button */}
+            <Box
+              height="100%"
+              width="100%"
+              display="flex"
+              justifyContent="flex-end"
+              flexDirection="column"
+            >
+              <Button variant="outlined" type='submit' >Create Posts</Button>
+            </Box>
           </form>
         </Box>
       </Box>
