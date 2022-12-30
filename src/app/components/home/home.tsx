@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { Autocomplete, Box, Button, Checkbox, Container, Divider, FormControlLabel, Grid, InputAdornment, InputLabel, ListItemText, Select, SelectChangeEvent, Stack, Table, TableBody, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, Checkbox, Container, Divider, FormControlLabel, Grid, InputAdornment, InputLabel, ListItemText, Paper, Select, SelectChangeEvent, Stack, Table, TableBody, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { BpCheckbox } from '../../common/components/styled/styledCheckbox';
 import { DashboardCellBody, DashboardCellHeader } from '../../common/components/styled/styledTableCell';
 import { DatePicker, DateTimePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
+import { FileUpload } from '../../common/components/functional/fileupload';
 import { ItemDetailsBase, useCheckbox } from '../../common/hooks/useCheckbox';
 import { Link } from '@mui/material';
 import { MenuItem } from '@mui/material';
@@ -13,10 +14,10 @@ import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from 
 import { SubredditCategory, SubredditDetails, SubredditInfo } from '../../common/interfaces/subredditList';
 import { TextFieldProps } from '@mui/material';
 import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react'; import { useForm } from 'react-hook-form';
 import InfoIcon from '@mui/icons-material/Info';
-import LinkIcon from '@mui/icons-material/Link'; import dayjs from 'dayjs';
+import LinkIcon from '@mui/icons-material/Link';
+import dayjs from 'dayjs';
 
 const HomePage: React.FC<Record<string, never>> = () => {
 
@@ -28,6 +29,8 @@ const HomePage: React.FC<Record<string, never>> = () => {
   const [sortedSubreddits, setSortedSubreddits] = useState<SubredditCategory[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imgurl, setImageUrl] = useState('');
+  const [displayPreview, setDisplayPreview] = useState(true);
   const [checkBoxUtility] = useCheckbox<SelectedSubreddit>([]);
 
   /* Functions */
@@ -115,7 +118,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                               sx={{ width: '100%', height: '100%', alignItems: 'end', ml: '-6px' }}
                               control={
                                 <BpCheckbox
-                                  sx={{ pl: 1, pb: '5px' }}
+                                  sx={{ pl: 1, pb: '6px' }}
                                   checked={section.isAllSelected()}
                                   indeterminate={section.isIndeterminate()}
                                   onChange={(): void => section.selectAll()}
@@ -162,7 +165,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                                   label={('r/') + subreddit.getName()}
                                   control={
                                     <BpCheckbox
-                                      sx={{ pl: 1, pb: '5px' }}
+                                      sx={{ pl: 1, pb: '6px' }}
                                       checked={subreddit.getIsSelected()}
                                       onChange={(): void => {
                                         subreddit.selectItem();
@@ -399,31 +402,52 @@ const HomePage: React.FC<Record<string, never>> = () => {
               Image
             </Typography>
           </Grid>
-          <Grid item xs={9}  >
-
-            <Box height="100%" width="100%" display='inline'>
-              <TextField
-                sx={{ width: '45%' }}
-                label="Pixiv Link"
-                variant="standard"
-                InputLabelProps={{ shrink: true }}
+          <Grid item xs={9}   >
+            <Box sx={{ display: 'flex' }}>
+              <Box sx={{ minHeight: '100%', width: '45%', alignSelf: 'center' }}   >
+                <TextField
+                  sx={{ width: '100%' }}
+                  label="Pixiv Link"
+                  variant="standard"
+                  InputLabelProps={{ shrink: true }}
+                />
+                <FormControlLabel
+                  label="Display Image Preview"
+                  sx={{ alignItems: 'end', ml: '-6px', mt: 1 }}
+                  control={
+                    <BpCheckbox
+                      sx={{ pl: 1, pb: '6px' }}
+                      checked={displayPreview}
+                      onChange={(): void => { setDisplayPreview(!displayPreview); }}
+                    />
+                  }
+                />
+              </Box>
+              <Box width="10%" minHeight="100%" justifyContent="center"
+                alignItems="center" sx={{ display: 'flex', alignContent: 'center' }}>
+                <Divider orientation='vertical' />
+              </Box>
+              <FileUpload
+                sx={{
+                  display: 'inline', width: '45%', border: '1px solid', borderRadius: 1, borderColor: 'rgba(255, 255, 255, 0.09)'
+                }}
+                width='100%'
+                onChange={(event): void => { setImageUrl(URL.createObjectURL(event.target.files?.[0] ?? new Blob())); }}
+                onDrop={(event): void => { setImageUrl(URL.createObjectURL(event.dataTransfer.files?.[0] ?? new Blob())); }}
               />
             </Box>
-            <Divider sx={{ display: 'inline', mr: 5, ml: 5, minHeight: '100%' }} orientation='vertical' />
-            <Button
-              variant="contained"
-              component="label"
-            >
-              Upload File
-              <input
-                type="file"
-                hidden
-              />
-            </Button>
+            {imgurl && displayPreview ?
+              <Box sx={{ width: '100%', height: '500px', display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <Paper variant="outlined" sx={{ width: '100%', height: '100%', textAlign: 'center' }}>
+                  <img src={imgurl} style={{ maxHeight: '100%' }} />
+                </Paper>
+              </Box>
+              : <></>}
           </Grid>
           <Divider sx={{ width: '100%', marginTop: 2 }} />
 
           <Grid item xs={3}  >
+
             <Typography>
               Comment
             </Typography>
@@ -436,10 +460,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
       <Box m='10px'>
         <Box mb='10px'>
           <form onSubmit={addSubredditHandleSubmit(addSubredditSubmit)}>
-
-
             {/* Pixiv Link */}
-
 
             {/* Submit Button */}
             <Box
