@@ -37,18 +37,27 @@ const App: React.FC<Record<string, never>> = () => {
       <ToastComponent />
       <Header />
       <Container
-        maxWidth="lg"
+        disableGutters={true}
         sx={{
-          justifyContent: 'center',
-          paddingTop: '20px',
-        }}
-      >
-        <RouterProvider router={router} />
-      </Container>
+          position: 'relative',
+          minHeight: '94vh',
+          minWidth: '100vw',
+          pl: '0px'
+        }}>
 
-      {/* 100px paddingBottom Container allows scrolling to the bottom when covered by Footer */}
-      <Container sx={{ paddingBottom: '100px' }} />
-      <Footer />
+        <Container
+          maxWidth="lg"
+          sx={{
+            pb: '100px',
+            pt: '20px',
+          }}
+        >
+
+          <RouterProvider router={router} />
+
+        </Container>
+        <Footer />
+      </Container>
       <Loader />
     </ThemeProvider >
   );

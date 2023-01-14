@@ -5,8 +5,8 @@ const Footer: React.FC<Record<string, never>> = () => {
 
   return (
     <Paper sx={{
-      marginTop: 'calc(10% + 60px)',
-      bottom: 0,
+      position: 'absolute',
+      bottom: '0',
       width: '100%'
     }} component="footer" square variant="outlined">
       <Typography sx={{

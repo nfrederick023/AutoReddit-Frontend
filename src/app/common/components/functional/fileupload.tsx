@@ -117,7 +117,6 @@ export const FileUpload: React.FC<FileUploadProps> = (props: FileUploadProps) =>
                 height={height}
                 width={width}
                 sx={{ pointerEvents: 'none', alignContent: 'center', justifyContent: 'center', display: 'flex', flexWrap: 'wrap' }}
-
               >
                 <CloudUploadIcon fontSize="large" />
                 <Typography width="100%">{labelText}</Typography>

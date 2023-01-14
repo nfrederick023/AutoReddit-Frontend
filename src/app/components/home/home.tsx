@@ -2,22 +2,24 @@ import * as React from 'react';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { Autocomplete, Box, Button, Checkbox, Container, Divider, FormControlLabel, Grid, InputAdornment, InputLabel, ListItemText, Paper, Select, SelectChangeEvent, Stack, Table, TableBody, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { BpCheckbox } from '../../common/components/styled/styledCheckbox';
+import { ChangeEvent, Dispatch, ReactElement, ReactNode, SetStateAction } from 'react';
+import { CreatePost } from '../../common/interfaces/createPost';
 import { DashboardCellBody, DashboardCellHeader } from '../../common/components/styled/styledTableCell';
 import { DatePicker, DateTimePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { FileUpload } from '../../common/components/functional/fileupload';
-import { ItemDetailsBase, useCheckbox } from '../../common/hooks/useCheckbox';
+import { Flair, SubredditCategory, SubredditDetails, SubredditInfo } from '../../common/interfaces/subredditList';
+import { Item, ItemDetailsBase, useCheckbox } from '../../common/hooks/useCheckbox';
 import { Link } from '@mui/material';
 import { MenuItem } from '@mui/material';
-import { ReactElement, ReactNode } from 'react';
 import { SelectedSubreddit, Tags } from '../../common/interfaces/home';
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from '../../common/components/styled/styledAccordion';
-import { SubredditCategory, SubredditDetails, SubredditInfo } from '../../common/interfaces/subredditList';
 import { TextFieldProps } from '@mui/material';
-import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
-import { useEffect, useState } from 'react'; import { useForm } from 'react-hook-form';
+import { debounce } from 'lodash'; import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import InfoIcon from '@mui/icons-material/Info';
 import LinkIcon from '@mui/icons-material/Link';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 
 const HomePage: React.FC<Record<string, never>> = () => {
 
@@ -32,11 +34,15 @@ const HomePage: React.FC<Record<string, never>> = () => {
   const [imgurl, setImageUrl] = useState('');
   const [displayPreview, setDisplayPreview] = useState(true);
   const [checkBoxUtility] = useCheckbox<SelectedSubreddit>([]);
+  const [isCommentIncluded, setIsCommentIncluded] = useState(true);
+  const [isSourceIncludeded, setIsSourceIncluded] = useState(true);
+  const [createPost, setCreatePost] = useState<CreatePost>(new CreatePost());
+
+  const sourceText = '[Source](https://www.pixiv.com/kdnikdn/sndndask)';
 
   /* Functions */
   const addSubredditSubmit = async (data: SubredditDetails): Promise<void> => { setLoading(true); await addSubreddit(data); refetch(); };
   const deleteSubredditSubmit = async (data: SubredditDetails[]): Promise<void> => { setLoading(true); await deleteSubreddit(data); refetch(); };
-  const handleExpand = (panelName: string): void => { setExpanded(expanded?.includes(panelName) ? expanded.filter(name => name !== panelName) : [panelName, ...expanded]); };
   const createSelectedSubreddit = (subreddit: SubredditInfo): SelectedSubreddit => { return new SelectedSubreddit(subreddit); };
 
   const sortSubreddits = (): void => {
@@ -77,10 +83,56 @@ const HomePage: React.FC<Record<string, never>> = () => {
     sortSubreddits();
   }, [data]);
 
+  const debouncedSetState = <T,>(newValue: T, setAction: Dispatch<SetStateAction<T>> | ((...args: T[]) => void)): void => {
+    debounce(() => { setAction(newValue); }, 10)();
+  };
+
+  const handleCommentChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+    setCreatePost({ ...createPost, comment: event.target.value });
+  };
+
+  const handleTitleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+    setCreatePost({ ...createPost, defaultTitle: event.target.value });
+  };
+
+  const handleSubTitleChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, subreddit: Item<SelectedSubreddit>): void => {
+    subreddit.setProperties(subreddit.getProperties().setTitle(event.target.value));
+  };
+
+  const handleFlairChange = (flair: string, subreddit: Item<SelectedSubreddit>): void => {
+    subreddit.setProperties(subreddit.getProperties().setFlair(flair));
+  };
+
+  const handleImageChange = (file: File | undefined): void => {
+    setImageUrl(URL.createObjectURL(file ?? new Blob()));
+  };
+
+  const isAccordionExpanded = (accordionName: string): boolean => {
+    return expanded?.includes(accordionName);
+  };
+
+  const handleExpand = (panelName: string): void => {
+    setExpanded(expanded?.includes(panelName) ? expanded.filter(name => name !== panelName) : [panelName, ...expanded]);
+  };
+
+  const handleDateChange = (date: Dayjs | null): void => {
+    date ??= dayjs().add(30, 'minutes');
+    setCreatePost({ ...createPost, date });
+  };
+
+  const handleTagChange = (event: SelectChangeEvent<Tags[]>): void => {
+    setCreatePost({ ...createPost, defaultTags: event.target.value as Tags[] });
+  };
+
+  const addSource = (): void => {
+    setCreatePost({ ...createPost, comment: createPost.comment + sourceText });
+  };
+
   // toggles off loading spinner when all actions are complete
   if (loading === true && !isFetching && !isAddSubredditLoading && !isDeleteSubredditLoading) {
     setLoading(false);
   }
+
 
   return (
     <>
@@ -98,7 +150,9 @@ const HomePage: React.FC<Record<string, never>> = () => {
         return (
 
           <Container key={section.getName()} disableGutters >
-            <StyledAccordion expanded={!expanded?.includes(section.getName())} onChange={(): void => handleExpand(section.getName())} >
+            <StyledAccordion
+              expanded={isAccordionExpanded(section.getName())}
+              onChange={(): void => handleExpand(section.getName())} >
 
               {/* Category Header */}
               <StyledAccordionSummary id="panel1d-header">
@@ -118,7 +172,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                               sx={{ width: '100%', height: '100%', alignItems: 'end', ml: '-6px' }}
                               control={
                                 <BpCheckbox
-                                  sx={{ pl: 1, pb: '6px' }}
+                                  sx={{ pl: 1, pb: '5px' }}
                                   checked={section.isAllSelected()}
                                   indeterminate={section.isIndeterminate()}
                                   onChange={(): void => section.selectAll()}
@@ -165,7 +219,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                                   label={('r/') + subreddit.getName()}
                                   control={
                                     <BpCheckbox
-                                      sx={{ pl: 1, pb: '6px' }}
+                                      sx={{ pl: 1, pb: '5px' }}
                                       checked={subreddit.getIsSelected()}
                                       onChange={(): void => {
                                         subreddit.selectItem();
@@ -186,7 +240,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                                 <Autocomplete
                                   disableClearable
                                   options={subreddit.getProperties().getInfo().flairs.map(flair => flair.name)}
-                                  onChange={(event, value): void => { subreddit.setProperties(subreddit.getProperties().setFlair(value)); }}
+                                  onChange={(e, value): void => { handleFlairChange(value, subreddit); }}
                                   renderInput={
                                     (params): React.ReactNode =>
                                       <TextField {...params}
@@ -233,7 +287,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                               <TextField
                                 sx={{ minWidth: '100%', height: '100%' }}
                                 variant="standard"
-                                onChange={(event): void => { subreddit.setProperties(subreddit.getProperties().setTitle(event.target.value)); }}
+                                onChange={(event): void => { handleSubTitleChange(event, subreddit); }}
                               />
 
                             </DashboardCellBody>
@@ -348,10 +402,11 @@ const HomePage: React.FC<Record<string, never>> = () => {
 
             <Box sx={{ mb: 3, mr: 3, display: 'inline' }}>
               <TextField
-                sx={{ width: '45%' }}
+                sx={{ width: '67%' }}
                 label="Title"
                 variant="standard"
                 InputLabelProps={{ shrink: true }}
+                onChange={(event): void => { handleTitleChange(event); }}
               />
             </Box>
 
@@ -365,12 +420,13 @@ const HomePage: React.FC<Record<string, never>> = () => {
                 multiple
                 variant="standard"
                 id='tags-input'
-                value={[Tags.NSFW]}
+                value={createPost.defaultTags}
+                onChange={(event: SelectChangeEvent<Tags[]>): void => { handleTagChange(event); }}
                 renderValue={(selected): ReactNode => { return selected.join(', '); }}
               >
                 {[Tags.NSFW, Tags.OC, Tags.SPOILER].map((tag) => (
                   <MenuItem key={tag} value={tag}>
-                    <Checkbox checked={true} />
+                    <Checkbox checked={createPost.defaultTags.includes(tag)} />
                     <ListItemText primary={tag} />
                   </MenuItem>
                 ))}
@@ -382,16 +438,16 @@ const HomePage: React.FC<Record<string, never>> = () => {
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DatePicker
                 label="Date"
-                value={dayjs()}
-                onChange={(): void => { }}
-                renderInput={(params): ReactElement<TextFieldProps> => <TextField {...params} />}
+                value={createPost.date}
+                onChange={(value): void => { handleDateChange(value); }}
+                renderInput={(params): ReactElement<TextFieldProps> => <TextField sx={{ width: '48.5%' }} {...params} />}
               />
               <Box sx={{ mr: 3, display: 'inline' }} />
               <TimePicker
                 label="Time"
-                value={dayjs().add(30, 'minutes')}
-                onChange={(): void => { }}
-                renderInput={(params): ReactElement<TextFieldProps> => <TextField {...params} />}
+                value={createPost.date}
+                onChange={(value): void => { handleDateChange(value); }}
+                renderInput={(params): ReactElement<TextFieldProps> => <TextField sx={{ width: '48.5%' }} {...params} />}
               />
             </LocalizationProvider>
           </Grid>
@@ -416,7 +472,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
                   sx={{ alignItems: 'end', ml: '-6px', mt: 1 }}
                   control={
                     <BpCheckbox
-                      sx={{ pl: 1, pb: '6px' }}
+                      sx={{ pl: 1, pb: '5px' }}
                       checked={displayPreview}
                       onChange={(): void => { setDisplayPreview(!displayPreview); }}
                     />
@@ -432,8 +488,8 @@ const HomePage: React.FC<Record<string, never>> = () => {
                   display: 'inline', width: '45%', border: '1px solid', borderRadius: 1, borderColor: 'rgba(255, 255, 255, 0.09)'
                 }}
                 width='100%'
-                onChange={(event): void => { setImageUrl(URL.createObjectURL(event.target.files?.[0] ?? new Blob())); }}
-                onDrop={(event): void => { setImageUrl(URL.createObjectURL(event.dataTransfer.files?.[0] ?? new Blob())); }}
+                onChange={(event): void => { handleImageChange(event.target.files?.[0]); }}
+                onDrop={(event): void => { handleImageChange(event.dataTransfer.files?.[0]); }}
               />
             </Box>
             {imgurl && displayPreview ?
@@ -453,24 +509,50 @@ const HomePage: React.FC<Record<string, never>> = () => {
             </Typography>
           </Grid>
           <Grid item xs={9}  >
+            <Box>
+              <TextField
+                sx={{ width: '100%' }}
+                disabled={!isCommentIncluded}
+                multiline
+                rows={4}
+                label="Custom Comment"
+                InputLabelProps={{ shrink: true }}
+                onChange={(event): void => handleCommentChange(event)}
+                value={createPost.comment}
+              />
+            </Box>
+            <Box sx={{ mt: 1 }}>
 
+              <Button variant="outlined" onClick={(): void => { addSource(); }} sx={{ width: '30%' }}>Add Source</Button>
+
+              <Box sx={{ display: 'inline-flex', width: '50%' }}>
+                <FormControlLabel
+                  label="Include Comment"
+                  sx={{ verticalAlign: 'baseline', ml: '6px', mt: 1 }}
+                  control={
+                    <BpCheckbox
+                      checked={isCommentIncluded}
+                      onChange={(): void => { setIsCommentIncluded(!isCommentIncluded); }}
+                    />
+                  }
+                />
+              </Box>
+            </Box>
           </Grid>
         </Grid>
       </Box>
       <Box m='10px'>
         <Box mb='10px'>
           <form onSubmit={addSubredditHandleSubmit(addSubredditSubmit)}>
-            {/* Pixiv Link */}
 
             {/* Submit Button */}
             <Box
               height="100%"
               width="100%"
               display="flex"
-              justifyContent="flex-end"
-              flexDirection="column"
+              justifyContent="end"
             >
-              <Button variant="outlined" type='submit' >Create Posts</Button>
+              <Button variant="outlined" type='submit' sx={{ width: '30%' }}>Create Posts</Button>
             </Box>
           </form>
         </Box>
