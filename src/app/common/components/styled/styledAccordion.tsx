@@ -1,6 +1,7 @@
 /**
  * Credit:
  * https://mui.com/material-ui/react-accordion/
+ * 
  */
 
 import * as React from 'react';
@@ -26,11 +27,11 @@ export const StyledAccordionSummary = styled((props: AccordionSummaryProps) => (
   borderBottom: '1px solid',
   borderColor:
     theme.palette.mode === 'dark'
-      ? 'rgba(255, 255, 255, 0.12)'
+      ? 'rgba(255, 255, 255, 0.0)'
       : 'rgba(0, 0, 0, .04)',
   backgroundColor:
     theme.palette.mode === 'dark'
-      ? 'rgba(255, 255, 255, 0.09)'
+      ? 'rgba(255, 255, 255, 0.01)'
       : 'rgba(0, 0, 0, .04)',
   flexDirection: 'row-reverse',
   '& .MuiAccordionSummary-expandIconWrapper.Mui-expanded': {

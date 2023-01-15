@@ -1,4 +1,4 @@
-import { Tags } from './home';
+import { Tags } from './dashboard';
 import dayjs, { Dayjs } from 'dayjs';
 
 export interface PostDetails {

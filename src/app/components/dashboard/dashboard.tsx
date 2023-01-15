@@ -11,7 +11,7 @@ import { Flair, SubredditCategory, SubredditDetails, SubredditInfo } from '../..
 import { Item, ItemDetailsBase, useCheckbox } from '../../common/hooks/useCheckbox';
 import { Link } from '@mui/material';
 import { MenuItem } from '@mui/material';
-import { SelectedSubreddit, Tags } from '../../common/interfaces/home';
+import { SelectedSubreddit, Tags } from '../../common/interfaces/dashboard';
 import { StyledAccordion, StyledAccordionDetails, StyledAccordionSummary } from '../../common/components/styled/styledAccordion';
 import { TextFieldProps } from '@mui/material';
 import { debounce } from 'lodash'; import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
@@ -21,16 +21,12 @@ import InfoIcon from '@mui/icons-material/Info';
 import LinkIcon from '@mui/icons-material/Link';
 import dayjs, { Dayjs } from 'dayjs';
 
-const HomePage: React.FC<Record<string, never>> = () => {
+const DashboardPage: React.FC<Record<string, never>> = () => {
 
   /* Hooks */
-  const [addSubreddit, { isLoading: isAddSubredditLoading }] = useAddSubredditMutation();
-  const [deleteSubreddit, { isLoading: isDeleteSubredditLoading }] = useDeleteSubredditMutation();
-  const { register: addSubredditRegister, handleSubmit: addSubredditHandleSubmit } = useForm<SubredditDetails>();
   const { data, refetch, isFetching } = useGetSubredditListQuery();
   const [sortedSubreddits, setSortedSubreddits] = useState<SubredditCategory[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
   const [imgurl, setImageUrl] = useState('');
   const [displayPreview, setDisplayPreview] = useState(true);
   const [checkBoxUtility] = useCheckbox<SelectedSubreddit>([]);
@@ -41,8 +37,6 @@ const HomePage: React.FC<Record<string, never>> = () => {
   const sourceText = '[Source](https://www.pixiv.com/kdnikdn/sndndask)';
 
   /* Functions */
-  const addSubredditSubmit = async (data: SubredditDetails): Promise<void> => { setLoading(true); await addSubreddit(data); refetch(); };
-  const deleteSubredditSubmit = async (data: SubredditDetails[]): Promise<void> => { setLoading(true); await deleteSubreddit(data); refetch(); };
   const createSelectedSubreddit = (subreddit: SubredditInfo): SelectedSubreddit => { return new SelectedSubreddit(subreddit); };
 
   const sortSubreddits = (): void => {
@@ -82,10 +76,6 @@ const HomePage: React.FC<Record<string, never>> = () => {
   useEffect(() => {
     sortSubreddits();
   }, [data]);
-
-  const debouncedSetState = <T,>(newValue: T, setAction: Dispatch<SetStateAction<T>> | ((...args: T[]) => void)): void => {
-    debounce(() => { setAction(newValue); }, 10)();
-  };
 
   const handleCommentChange = (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
     setCreatePost({ ...createPost, comment: event.target.value });
@@ -128,22 +118,8 @@ const HomePage: React.FC<Record<string, never>> = () => {
     setCreatePost({ ...createPost, comment: createPost.comment + sourceText });
   };
 
-  // toggles off loading spinner when all actions are complete
-  if (loading === true && !isFetching && !isAddSubredditLoading && !isDeleteSubredditLoading) {
-    setLoading(false);
-  }
-
-
   return (
     <>
-      <Stack direction="row" spacing={2} >
-        <Typography variant='h6' >
-          Dashboard
-        </Typography>
-      </Stack>
-
-      <Divider sx={{ width: '100%', marginBottom: 1, marginTop: 1 }} />
-
       {!sortedSubreddits.length ? <Typography>No Subreddits Found.</Typography> : <></>}
 
       {checkBoxUtility.getSections().map((section) => {
@@ -322,72 +298,6 @@ const HomePage: React.FC<Record<string, never>> = () => {
       })}
       <Divider sx={{ width: '100%', marginBottom: 2, marginTop: 2 }} />
 
-      {/* <Box m='10px'>
-        <Box mb='10px'>
-          <form onSubmit={addSubredditHandleSubmit(addSubredditSubmit)}>
-            <Grid container spacing={{ xs: 2 }} columns={{ xs: 3, md: 12 }}>
-
-              <Grid item xs={4} >
-                <Box height="100%" width="100%">
-                  <Autocomplete
-                    freeSolo
-                    id="add-subreddit-textfield"
-                    options={[]}
-                    renderInput={(params): ReactNode => {
-                      params.InputProps.startAdornment = <InputAdornment position="start">r/</InputAdornment>;
-                      return (
-                        <TextField
-                          label="Subreddit"
-                          variant="standard"
-                          {...params}
-                          {...addSubredditRegister('subredditName')}
-                        />
-                      );
-                    }
-                    }
-                  />
-                </Box>
-              </Grid>
-
-              <Grid item xs={4}  >
-                <Box height="100%" width="100%">
-                  <Autocomplete
-                    freeSolo
-                    id="add-category-textfield"
-                    options={data?.map(category => category.categoryName) || []}
-                    renderInput={(params): ReactNode => <TextField {...params} variant="standard" label="Category"{...addSubredditRegister('categoryName')} />}
-                  />
-                </Box>
-              </Grid>
-
-              <Grid item xs={4} >
-                <Box
-                  height="100%"
-                  width="100%"
-                  display="flex"
-                  justifyContent="flex-end"
-                  flexDirection="column"
-                >
-                  <Button variant="outlined" type='submit' >Add Subreddit</Button>
-                </Box>
-              </Grid>
-            </Grid>
-          </form>
-        </Box>
-
-        <Button
-          variant="outlined"
-          color="error"
-          type='submit'
-          disabled={!checkBoxUtility.isAnyItemChecked()}
-          onClick={(): void => {
-            deleteSubredditSubmit(checkBoxUtility.getSelectedSections().flatMap((selected) => { return selected.getSelectedItems().map((item): SubredditDetails => { return { categoryName: selected.getName(), subredditName: item.getName() }; }); }));
-          }}
-        >
-          Delete Selected Subreddits
-        </Button>
-      </Box> */}
-
       {/* Create Post Form */}
       <Box sx={{ marginLeft: '16px', width: 'calc(100% - 16px)' }}>
         <Grid container spacing={{ xs: 2 }} columns={{ xs: 3, md: 12 }}>
@@ -543,7 +453,7 @@ const HomePage: React.FC<Record<string, never>> = () => {
       </Box>
       <Box m='10px'>
         <Box mb='10px'>
-          <form onSubmit={addSubredditHandleSubmit(addSubredditSubmit)}>
+          <form >
 
             {/* Submit Button */}
             <Box
@@ -561,4 +471,4 @@ const HomePage: React.FC<Record<string, never>> = () => {
   );
 };
 
-export default HomePage;
+export default DashboardPage;

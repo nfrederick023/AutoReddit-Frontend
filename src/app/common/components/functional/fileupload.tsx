@@ -1,6 +1,7 @@
 /**
  * Credit:
  * https://codesandbox.io/s/lgqwn?file=/src/FileUpload/FileUpload.tsx:138-150
+ * 
  */
 
 import { Box, SxProps, Theme, Typography, styled } from '@mui/material';

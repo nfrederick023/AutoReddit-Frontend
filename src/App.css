@@ -8,8 +8,8 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
 input:-webkit-autofill:active {
-   transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
-   transition-delay: background-color 5000s, color 5000s;
+  transition: background-color 5000s ease-in-out 0s, color 5000s ease-in-out 0s;
+  transition-delay: background-color 5000s, color 5000s;
 }
 
 /*
@@ -17,5 +17,18 @@ input:-webkit-autofill:active {
 * https://stackoverflow.com/questions/1417934/how-to-prevent-scrollbar-from-repositioning-web-page
 */
 html {
-   overflow-y: overlay;
+  overflow-y: overlay;
+}
+
+.selectedLink {
+  color: #FFF !important;
+}
+
+.link {
+  color: #FFF !important;
+  opacity: 0.6;
+}
+
+.link:hover {
+  opacity: 1;
 }
