@@ -6,13 +6,11 @@ const Header: React.FC<Record<string, never>> = () => {
 
   return (
     <>
-      {/* <AppBar color='transparent' position="relative">
-        <Toolbar>
-          <Typography variant="h6" color="inherit" noWrap>
+      {/* <Container sx={{ justifyContent: 'center' }}>
+          <Typography variant="h6" color="inherit" noWrap >
+            Auto Reddit
           </Typography>
-        </Toolbar>
-      </AppBar> */}
-      <Container sx={{ mb: '10px' }} />
+        </Container> */}
     </>
   );
 };

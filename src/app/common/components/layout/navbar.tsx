@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { AppPage } from '../../interfaces/layout';
-import { Box, Divider, Link, Stack, Typography } from '@mui/material';
+import { Box, Divider, Stack, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const appPages: AppPage[] = [
   {
@@ -22,23 +23,22 @@ const appPages: AppPage[] = [
 ];
 
 const NavBar: React.FC<Record<string, never>> = () => {
+
+  const navigate = useNavigate();
+
+
+
   return (
     <>
       <Stack direction="row" spacing={2} >
         {appPages.map((appPage, index) =>
           <Box display='flex' key={appPage.pageTitle}>
-            <Typography  >
-
-              <Link
-                href={appPage.pageLink}
-                underline="none"
-                className={window.location.pathname === appPage.pageLink ? 'selectedLink' : 'link'}
-              >
-                {appPage.pageTitle}
-
-              </Link>
+            <Typography
+              onClick={(): void => { navigate(appPage.pageLink); }}
+              className={window.location.pathname === appPage.pageLink ? 'selectedLink link' : 'link'}
+            >
+              {appPage.pageTitle}
             </Typography>
-
             {index !== appPages.length - 1 ?
               <Box minHeight="100%" justifyContent="center" ml='16px'
                 alignItems="center" sx={{ display: 'flex', alignContent: 'center' }}>

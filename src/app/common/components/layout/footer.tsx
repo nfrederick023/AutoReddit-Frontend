@@ -7,7 +7,8 @@ const Footer: React.FC<Record<string, never>> = () => {
     <Paper sx={{
       position: 'absolute',
       bottom: '0',
-      width: '100%'
+      width: '100%',
+      borderLeft: '0'
     }} component="footer" square variant="outlined">
       <Typography sx={{
         flexGrow: 1,

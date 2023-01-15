@@ -20,8 +20,11 @@ html {
   overflow-y: overlay;
 }
 
+/**
+* Colors for nav links. 
+*/
 .selectedLink {
-  color: #FFF !important;
+  opacity: 1 !important;
 }
 
 .link {
@@ -31,4 +34,5 @@ html {
 
 .link:hover {
   opacity: 1;
+  cursor: pointer;
 }

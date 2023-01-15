@@ -10,9 +10,9 @@ const SubredditsPage: React.FC<Record<string, never>> = () => {
   const [deleteSubreddit] = useDeleteSubredditMutation();
   const { data, refetch } = useGetSubredditListQuery();
 
-  console.log(data);
   const addSubredditSubmit = async (data: SubredditDetails): Promise<void> => { await addSubreddit(data); refetch(); };
   const deleteSubredditSubmit = async (data: SubredditDetails[]): Promise<void> => { await deleteSubreddit(data); refetch(); };
+
   return (
     <>
       <Box m='10px'>
@@ -80,6 +80,7 @@ const SubredditsPage: React.FC<Record<string, never>> = () => {
           Delete Selected Subreddits
         </Button> */}
       </Box>
+
       {data?.map(subredditCategory =>
         subredditCategory.subreddits?.map(subreddit =>
           <>

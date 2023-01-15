@@ -1,7 +1,7 @@
 import './App.css';
 import * as React from 'react';
 import { Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
-import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
 import DashboardPage from './app/components/dashboard/dashboard';
 import ErrorPage from './app/components/error/error';
 import Footer from './app/common/components/layout/footer';
@@ -15,43 +15,11 @@ import ToastComponent from './app/common/components/layout/toast';
 
 const App: React.FC<Record<string, never>> = () => {
 
-  const router = createBrowserRouter([
-    {
-      path: '/',
-      element: <DashboardPage />,
-      errorElement: <></>,
-
-    }, {
-      path: '/options',
-      element: <OptionsPage />
-    }, {
-      path: '/subreddits',
-      element: <SubredditsPage />
-    }, {
-      path: '/schedule',
-      element: <SchedulePage />
-    }, {
-      path: '*',
-      element: <ErrorPage />
-    }
-  ]);
-
   const theme = createTheme({
     palette: {
       mode: 'dark',
     },
   });
-
-  window.onload = function (): void {
-    setTimeout(function () {
-      console.log('ran');
-      const el = document.getElementById('body');
-      if (el) {
-        el.style.display = 'inline';
-      }
-    }, 200);
-  };
-
 
   return (
     <ThemeProvider theme={theme}>
@@ -60,12 +28,10 @@ const App: React.FC<Record<string, never>> = () => {
       <ToastComponent />
       <Header />
       <Container
-        id="body"
         disableGutters={true}
         sx={{
-          display: 'none',
           position: 'relative',
-          minHeight: '99vh',
+          minHeight: '100vh',
           minWidth: '100vw',
           pl: '0px'
         }}>
@@ -78,7 +44,13 @@ const App: React.FC<Record<string, never>> = () => {
           }}
         >
           <NavBar />
-          <RouterProvider router={router} />
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/options" element={<OptionsPage />} />
+            <Route path="/subreddits" element={<SubredditsPage />} />
+            <Route path="/schedule" element={<SchedulePage />} />
+            <Route path='*' element={<ErrorPage />} />
+          </Routes>
 
         </Container>
         <Footer />
