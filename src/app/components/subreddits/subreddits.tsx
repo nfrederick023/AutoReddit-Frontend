@@ -82,13 +82,17 @@ const SubredditsPage: React.FC<Record<string, never>> = () => {
       </Box>
 
       {data?.map(subredditCategory =>
-        subredditCategory.subreddits?.map(subreddit =>
-          <>
-            <Typography>
-              {subreddit.subredditName}
-            </Typography>
-          </>
-        )
+        <>
+          {subredditCategory.categoryName}
+
+          {subredditCategory.subreddits?.map(subreddit =>
+            <>
+              <Typography>
+                {subreddit.subredditName}
+              </Typography>
+            </>
+          )}
+        </>
       )}
     </>
   );

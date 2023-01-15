@@ -24,14 +24,13 @@ import dayjs, { Dayjs } from 'dayjs';
 const DashboardPage: React.FC<Record<string, never>> = () => {
 
   /* Hooks */
-  const { data, refetch, isFetching } = useGetSubredditListQuery();
+  const { data } = useGetSubredditListQuery();
   const [sortedSubreddits, setSortedSubreddits] = useState<SubredditCategory[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [imgurl, setImageUrl] = useState('');
   const [displayPreview, setDisplayPreview] = useState(true);
   const [checkBoxUtility] = useCheckbox<SelectedSubreddit>([]);
   const [isCommentIncluded, setIsCommentIncluded] = useState(true);
-  const [isSourceIncludeded, setIsSourceIncluded] = useState(true);
   const [createPost, setCreatePost] = useState<CreatePost>(new CreatePost());
 
   const sourceText = '[Source](https://www.pixiv.com/kdnikdn/sndndask)';
@@ -178,7 +177,6 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody >
-
 
                       {/* Subreddit Checkbox */}
 

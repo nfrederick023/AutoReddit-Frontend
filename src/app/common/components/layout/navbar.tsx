@@ -17,6 +17,10 @@ const appPages: AppPage[] = [
     pageLink: '/subreddits'
   },
   {
+    pageTitle: 'Stats',
+    pageLink: '/stats'
+  },
+  {
     pageTitle: 'Options',
     pageLink: '/options'
   }
@@ -25,9 +29,6 @@ const appPages: AppPage[] = [
 const NavBar: React.FC<Record<string, never>> = () => {
 
   const navigate = useNavigate();
-
-
-
   return (
     <>
       <Stack direction="row" spacing={2} >
