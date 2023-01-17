@@ -1,18 +1,17 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { SubredditDetails } from '../../common/interfaces/subredditList';
 
 export const createPostAPI = createApi({
   reducerPath: 'createPostApi',
   baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:8080/rest/' }),
   endpoints: (builder) => ({
     createPost: builder.mutation({
-      query: (body: SubredditDetails) => ({
+      query: (body) => ({
         url: 'createPost',
         method: 'POST',
         body,
         headers: {
-         'content-type': 'application/json'
-       },
+          'content-type': 'application/json'
+        },
       }),
     }),
   }),

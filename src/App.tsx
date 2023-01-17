@@ -2,16 +2,16 @@ import './App.css';
 import * as React from 'react';
 import { Container, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import { Route, Routes } from 'react-router-dom';
-import DashboardPage from './app/components/dashboard/dashboard';
-import ErrorPage from './app/components/error/error';
-import Footer from './app/common/components/layout/footer';
-import Header from './app/common/components/layout/header';
-import Loader from './app/common/components/layout/loader';
-import NavBar from './app/common/components/layout/navbar';
-import OptionsPage from './app/components/options/options';
-import SchedulePage from './app/components/schedule/schedule';
-import SubredditsPage from './app/components/subreddits/subreddits';
-import ToastComponent from './app/common/components/layout/toast';
+import DashboardPage from './app/components/dashboard';
+import ErrorPage from './app/components/error';
+import Footer from './app/components/common/layout/footer';
+import Header from './app/components/common/layout/header';
+import Loader from './app/components/common/layout/loader';
+import NavBar from './app/components/common/layout/navbar';
+import OptionsPage from './app/components/options';
+import SchedulePage from './app/components/schedule';
+import SubredditsPage from './app/components/subreddits';
+import ToastComponent from './app/components/common/layout/toast';
 
 const App: React.FC<Record<string, never>> = () => {
 

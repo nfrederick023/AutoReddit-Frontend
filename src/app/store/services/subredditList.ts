@@ -1,41 +1,39 @@
-import { SubredditCategory, SubredditDetails} from '../../common/interfaces/subredditList';
+import { AddSubredditPayload, DeleteSubredditPayload, Subreddit } from '../../utils/types';
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 export const subredditListAPI = createApi({
   reducerPath: 'subredditListAPI',
   baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:8080/rest/' }),
   endpoints: (builder) => ({
-   getSubredditList: builder.query<SubredditCategory[], void>({
-      
+    getSubredditList: builder.query<Subreddit[], void>({
       query: () => ({
         url: 'subredditListAPI',
         method: 'GET',
-         refetchOnMountOrArgChange: true
+        refetchOnMountOrArgChange: true
       }),
     }),
 
     addSubreddit: builder.mutation({
-      query: (body: SubredditDetails) => ({
+      query: (body: AddSubredditPayload) => ({
         url: 'subredditListAPI',
         method: 'POST',
         body,
         headers: {
-         'content-type': 'application/json'
-       },
+          'content-type': 'application/json'
+        },
       }),
     }),
 
     deleteSubreddit: builder.mutation({
-      query: (body: SubredditDetails[]) => ({
+      query: (body: DeleteSubredditPayload) => ({
         url: 'subredditListAPI',
         method: 'DELETE',
         body,
         headers: {
-         'content-type': 'application/json'
-       },
+          'content-type': 'application/json'
+        },
       }),
     }),
-    
   }),
 });
 

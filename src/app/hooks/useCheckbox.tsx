@@ -5,26 +5,32 @@ import { Dispatch, SetStateAction, useState } from 'react';
  * @param initialState the intial check state of the checkboxes
  * @returns a utility class containing the necassary functions needed for useCheckbox 
  */
-export const useCheckbox = <T,>(initialItems: ItemDetailsBase<T>[]): [SelectUtility<T>] => {
-  const selectUtility = new SelectUtility(initialItems);
+export const useCheckbox = <T,>(initialItems: SelectItemsBase<T>[]): [SelectUtility<T>] => {
+  const selectUtility = new SelectUtility(initialItems.map(item => new SelectItems(item)));
   const [state, setState] = useState<SelectUtility<T>>(selectUtility);
   selectUtility.setHandler(setState);
   return [state];
 };
 
-
-export interface ItemDetailsBase<T> {
+export interface SelectItemsBase<T> {
   name?: string,
   section?: string,
   isSelected?: boolean,
-  properties?: T
+  properties: T
 }
 
-export interface ItemDetails<T> {
-  name: string,
-  section: string,
-  isSelected: boolean,
-  properties: T
+export class SelectItems<T> {
+  public readonly itemName: string;
+  public readonly sectionName: string;
+  public readonly isSelected: boolean;
+  public readonly properties: T;
+
+  constructor(selectItemsBase: SelectItemsBase<T>) {
+    this.itemName = selectItemsBase.name || 'undefined';
+    this.sectionName = selectItemsBase.section || 'undefined';
+    this.isSelected = selectItemsBase.isSelected || false;
+    this.properties = selectItemsBase.properties;
+  }
 }
 
 export class Item<T>{
@@ -33,10 +39,10 @@ export class Item<T>{
   private properties: T;
   private updateState: () => void;
 
-  public constructor(item: ItemDetails<T>, updateState: () => void) {
+  public constructor(item: SelectItems<T>, updateState: () => void) {
     this.properties = item.properties;
     this.isSelected = item.isSelected;
-    this.name = item.name;
+    this.name = item.itemName;
     this.updateState = updateState;
   }
 
@@ -81,8 +87,8 @@ export class Section<T> {
   private items: Item<T>[];
   private updateState: () => void;
 
-  public constructor(items: ItemDetails<T>[], updateState: () => void) {
-    this.name = items[0].section;
+  public constructor(items: SelectItems<T>[], updateState: () => void) {
+    this.name = items[0].sectionName;
     this.items = items.map((item): Item<T> => { return new Item(item, updateState); });
     this.updateState = updateState;
   }
@@ -142,7 +148,7 @@ class SelectUtility<T> {
   private setState: Dispatch<SelectUtility<T>> | undefined;
   private sections: Section<T>[];
 
-  public constructor(items: ItemDetailsBase<T>[]) {
+  public constructor(items: SelectItems<T>[]) {
     this.sections = this.intializeSections(items);
   }
 
@@ -151,26 +157,12 @@ class SelectUtility<T> {
       this.setState({ ...this });
   };
 
-  private setDefaultValues = (items: ItemDetailsBase<T>[]): ItemDetails<T>[] => {
-    items.forEach((item, index) => {
-      if (typeof (item.isSelected) === 'undefined')
-        items[index].isSelected = false;
-      if (!item.section)
-        items[index].section = `${index}_checkbox_section`;
-      if (!item.name)
-        items[index].section = `${index}_checkbox`;
-    });
-
-    return items as ItemDetails<T>[];
-  };
-
-  private intializeSections = (newItems: ItemDetailsBase<T>[]): Section<T>[] => {
-    const updatedItems = this.setDefaultValues(newItems);
+  private intializeSections = (newItems: SelectItems<T>[]): Section<T>[] => {
 
     const newSections: Section<T>[] = [];
-    updatedItems.forEach((newItem) => {
-      const sectionInNewState = newSections.find(section => section.getName() === newItem.section);
-      const itemInOldState = this.sections.find(section => section.getName() === newItem.section)?.getItems().find(item => item.getName() === newItem.name);
+    newItems.forEach((newItem) => {
+      const sectionInNewState = newSections.find(section => section.getName() === newItem.sectionName);
+      const itemInOldState = this.sections.find(section => section.getName() === newItem.sectionName)?.getItems().find(item => item.getName() === newItem.itemName);
 
       // add new section and new item 
       if (!sectionInNewState) {
@@ -198,7 +190,7 @@ class SelectUtility<T> {
     this.setState = setState;
   };
 
-  public setUtility = (newItems: ItemDetailsBase<T>[]): void => {
+  public setUtility = (newItems: SelectItems<T>[]): void => {
     this.sections = this.intializeSections(newItems);
     this.updateState();
   };

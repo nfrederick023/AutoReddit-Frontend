@@ -1,7 +1,11 @@
 import * as React from 'react';
-import { AppPage } from '../../interfaces/layout';
 import { Box, Divider, Stack, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+
+interface AppPage {
+  pageTitle: string,
+  pageLink: string
+}
 
 const appPages: AppPage[] = [
   {

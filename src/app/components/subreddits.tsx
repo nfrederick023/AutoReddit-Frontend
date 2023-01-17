@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Autocomplete, Box, Button, Grid, InputAdornment, TextField, Typography } from '@mui/material';
-import { SubredditDetails } from '../../common/interfaces/subredditList';
-import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../../store/services/subredditList';
+import { SubredditDetails } from '../common/interfaces/subredditList';
+import { useAddSubredditMutation, useDeleteSubredditMutation, useGetSubredditListQuery } from '../store/services/subredditList';
 import { useForm } from 'react-hook-form';
 
 const SubredditsPage: React.FC<Record<string, never>> = () => {

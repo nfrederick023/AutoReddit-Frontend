@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { Alert, Snackbar } from '@mui/material';
-import { displayToast } from '../../../store/actions/toastAction';
-import { store } from '../../../store/store';
-import { useStateSelector } from '../../hooks/useSelector';
+import { displayToast } from '../../store/actions/toastAction';
+import { store } from '../../store/store';
+import { useStateSelector } from '../../common/hooks/useSelector';
 
 const ToastComponent = (): React.ReactElement<void> => {
 

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Backdrop, CircularProgress } from '@mui/material';
-import { useStateSelector } from '../../hooks/useSelector';
+import { useStateSelector } from '../../common/hooks/useSelector';
 
 const Loader: React.FC<Record<string, never>> = () => {
 
