@@ -1,4 +1,4 @@
-import { LoaderState } from '../../common/interfaces/loader';
+import { LoaderState } from '../../utils/types';
 import { createAction, createReducer } from '@reduxjs/toolkit';
 
 const dispatchToast = createAction<LoaderState>('dispatchLoader');
@@ -6,8 +6,8 @@ const dispatchToast = createAction<LoaderState>('dispatchLoader');
 const initialState: LoaderState = { isLoading: false };
 
 export const dispatchLoaderReducer = createReducer(initialState, (builder) => {
-  builder
-    .addCase(dispatchToast, (state, action) => {
-      state.isLoading = action.payload.isLoading;
-    });
+    builder
+        .addCase(dispatchToast, (state: LoaderState, action) => {
+            state.isLoading = action.payload.isLoading;
+        });
 });

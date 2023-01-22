@@ -8,18 +8,18 @@ import type { Middleware } from '@reduxjs/toolkit';
  * Middleware which logs errors on API failures. 
  */
 export const loadingSpinnerToggle: Middleware =
-  () => (next) => (action: AnyAction) => {
+    () => (next) => (action: AnyAction) => {
 
-    const endpointName = (action?.meta?.arg as QueryThunkArg)?.endpointName;
+        const endpointName = (action?.meta?.arg as QueryThunkArg)?.endpointName;
 
-    if (endpointName) {
+        if (endpointName) {
 
-      if (isFulfilled(action) || isRejected(action)) {
-        store.dispatch(displayLoader(false));
-      } else {
-        store.dispatch(displayLoader(true));
-      }
+            if (isFulfilled(action) || isRejected(action)) {
+                store.dispatch(displayLoader(false));
+            } else {
+                store.dispatch(displayLoader(true));
+            }
 
-    }
-    return next(action);
-  };
+        }
+        return next(action);
+    };

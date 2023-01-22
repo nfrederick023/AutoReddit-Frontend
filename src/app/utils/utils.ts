@@ -7,5 +7,5 @@ import { debounce } from 'lodash';
  * @param setAction the setState action
  */
 export const debouncedSetState = <T,>(newValue: T, setAction: Dispatch<SetStateAction<T>> | ((...args: T[]) => void)): void => {
-  debounce(() => { setAction(newValue); }, 10)();
+    debounce(() => { setAction(newValue); }, 10)();
 };

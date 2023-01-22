@@ -1,4 +1,6 @@
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Updater, useImmer } from 'use-immer';
+import { WritableDraft } from 'immer/dist/internal';
+import { castDraft } from 'immer';
 
 /**
  * A hook for checkboxes with select all. 
@@ -6,209 +8,221 @@ import { Dispatch, SetStateAction, useState } from 'react';
  * @returns a utility class containing the necassary functions needed for useCheckbox 
  */
 export const useCheckbox = <T,>(initialItems: SelectItemsBase<T>[]): [SelectUtility<T>] => {
-  const selectUtility = new SelectUtility(initialItems.map(item => new SelectItems(item)));
-  const [state, setState] = useState<SelectUtility<T>>(selectUtility);
-  selectUtility.setHandler(setState);
-  return [state];
+    const [state, setState] = useImmer<SelectUtility<T> | undefined>(undefined);
+    const selectItems = createSelectItemsArr<T>(initialItems);
+    setState((draft) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        draft = castDraft(new SelectUtility(selectItems, setState as Updater<SelectUtility<T>>));
+    });
+    return [state as SelectUtility<T>];
+};
+
+const createSelectItemsArr = <T,>(items: SelectItemsBase<T>[]): SelectItems<T>[] => {
+    return items.map(item => new SelectItems<T>(item));
 };
 
 export interface SelectItemsBase<T> {
-  name?: string,
-  section?: string,
-  isSelected?: boolean,
-  properties: T
+    name: string,
+    sectionNames?: string[],
+    isSelected?: boolean,
+    properties?: T
 }
 
 export class SelectItems<T> {
-  public readonly itemName: string;
-  public readonly sectionName: string;
-  public readonly isSelected: boolean;
-  public readonly properties: T;
+    public readonly name: string;
+    public readonly sectionNames: string[];
+    public readonly isSelected: boolean;
+    public readonly properties: T;
 
-  constructor(selectItemsBase: SelectItemsBase<T>) {
-    this.itemName = selectItemsBase.name || 'undefined';
-    this.sectionName = selectItemsBase.section || 'undefined';
-    this.isSelected = selectItemsBase.isSelected || false;
-    this.properties = selectItemsBase.properties;
-  }
+    constructor(item: SelectItemsBase<T>) {
+        this.name = item.name,
+            this.sectionNames = item.sectionNames ?? ['unnamed_section'],
+            this.isSelected = item.isSelected ?? false,
+            this.properties = item.properties as T;
+    }
 }
 
 export class Item<T>{
-  private name: string;
-  private isSelected: boolean;
-  private properties: T;
-  private updateState: () => void;
+    public readonly name: string;
+    public readonly isSelected: boolean;
+    public readonly properties: T;
+    private readonly sectionName: string;
+    private readonly setState: Updater<SelectUtility<T>>;
 
-  public constructor(item: SelectItems<T>, updateState: () => void) {
-    this.properties = item.properties;
-    this.isSelected = item.isSelected;
-    this.name = item.itemName;
-    this.updateState = updateState;
-  }
+    public constructor(item: SelectItems<T>, sectionName: string, setState: Updater<SelectUtility<T>>) {
+        this.properties = item.properties;
+        this.isSelected = item.isSelected;
+        this.name = item.name;
+        this.sectionName = sectionName;
+        this.setState = setState;
+    }
 
-  // Functions
-  public selectItem = (): void => {
-    this.setIsSelected(!this.getIsSelected());
-    this.updateState();
-  };
+    private getDraftItem = (draft: WritableDraft<SelectUtility<T>>): WritableDraft<Item<T>> | undefined => {
+        return draft.sections.find(section => section.name === this.sectionName)?.items.find(item => item.name === this.name);
+    };
 
-  // Setters
-  public setIsSelected = (isSelected: boolean): void => {
-    this.isSelected = isSelected;
-    this.updateState();
-  };
+    public selectItem = (): void => {
+        this.setState((draft: WritableDraft<SelectUtility<T>>): void => {
+            const item = this.getDraftItem(draft);
+            if (item)
+                item.isSelected = !item.isSelected;
+        });
+    };
 
-  public setName = (name: string): void => {
-    this.name = name;
-    this.updateState();
-  };
+    public setIsSelected = (isSelected: boolean): void => {
+        this.setState((draft: WritableDraft<SelectUtility<T>>): void => {
+            const item = this.getDraftItem(draft);
+            if (item)
+                item.isSelected = isSelected;
+        });
+    };
 
-  public setProperties = (properties: T): void => {
-    this.properties = properties;
-    this.updateState();
-  };
+    public setName = (name: string): void => {
+        this.setState((draft: WritableDraft<SelectUtility<T>>): void => {
+            const item = this.getDraftItem(draft);
+            if (item)
+                item.name = name;
+        });
+    };
 
-  // Getters
-  public getIsSelected = (): boolean => {
-    return this.isSelected;
-  };
-
-  public getName = (): string => {
-    return this.name;
-  };
-
-  public getProperties = (): T => {
-    return this.properties;
-  };
+    public setProperties = (properties: T): void => {
+        this.setState((draft: WritableDraft<SelectUtility<T>>): void => {
+            const item = this.getDraftItem(draft);
+            if (item)
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                //@ts-ignore
+                item.properties = castDraft(properties);
+        });
+    };
 }
 
 export class Section<T> {
-  private name: string;
-  private items: Item<T>[];
-  private updateState: () => void;
+    public readonly name: string;
+    public readonly items: Item<T>[];
+    private readonly setState: Updater<SelectUtility<T>>;
 
-  public constructor(items: SelectItems<T>[], updateState: () => void) {
-    this.name = items[0].sectionName;
-    this.items = items.map((item): Item<T> => { return new Item(item, updateState); });
-    this.updateState = updateState;
-  }
+    public constructor(items: SelectItems<T>[], name: string, setState: Updater<SelectUtility<T>>) {
+        this.setState = setState;
+        this.name = name;
+        this.items = items.map((item): Item<T> => { return new Item(item, name, setState); });
+        this.setState = setState;
+    }
 
-  // Functions
-  public isIndeterminate = (): boolean => {
-    if (this.isAllSelected())
-      return false;
+    // Functions
+    private getDraftSection = (draft: WritableDraft<SelectUtility<T>>): WritableDraft<Section<T>> | undefined => {
+        return draft.sections.find(section => section.name === this.name);
+    };
 
-    return this.items.some(item => item.getIsSelected());
-  };
+    public isIndeterminate = (): boolean => {
+        if (this.isAllSelected())
+            return false;
 
-  public isAllSelected = (): boolean => {
-    return !this.items.filter(item => !item.getIsSelected()).length;
-  };
+        return this.items.some(item => item.isSelected);
+    };
 
-  public isAnySelected = (): boolean => {
-    return this.isIndeterminate() || this.isAllSelected();
-  };
+    public isAllSelected = (): boolean => {
+        return !this.items.filter(item => !item.isSelected).length;
+    };
 
-  public selectAll = (): void => {
-    const isIndeterminate = this.isIndeterminate();
-    this.items.forEach((item) => {
-      if (isIndeterminate)
-        item.setIsSelected(true);
-      else
-        item.selectItem();
-    });
-  };
+    public isAnySelected = (): boolean => {
+        return this.isIndeterminate() || this.isAllSelected();
+    };
 
-  public getSelectedItems = (): Item<T>[] => {
-    return this.items.filter(item => item.getIsSelected());
-  };
+    public selectAll = (): void => {
+        const isIndeterminate = this.isIndeterminate();
+        this.items.forEach((item) => {
+            if (isIndeterminate)
+                item.setIsSelected(true);
+            else
+                item.selectItem();
+        });
+    };
 
-  // Setters
-  public setName = (name: string): void => {
-    this.name = name;
-    this.updateState();
-  };
+    public getSelectedItems = (): Item<T>[] => {
+        return this.items.filter(item => item.isSelected);
+    };
 
-  public setItems = (items: Item<T>[]): void => {
-    this.items = items;
-    this.updateState();
-  };
+    // Setters
+    public setName = (name: string): void => {
+        this.setState((draft: WritableDraft<SelectUtility<T>>): void => {
+            const section = this.getDraftSection(draft);
+            if (section)
+                section.name = castDraft(name);
+        });
+    };
 
-  // Getters
-  public getName = (): string => {
-    return this.name;
-  };
-
-  public getItems = (): Item<T>[] => {
-    return this.items;
-  };
+    public setItems = (items: Item<T>[]): void => {
+        this.setState((draft: WritableDraft<SelectUtility<T>>): void => {
+            const section = this.getDraftSection(draft);
+            if (section)
+                section.items = castDraft(items);
+        });
+    };
 }
 
 class SelectUtility<T> {
-  private setState: Dispatch<SelectUtility<T>> | undefined;
-  private sections: Section<T>[];
+    public readonly sections: Section<T>[];
+    private readonly setState: Updater<SelectUtility<T>>;
 
-  public constructor(items: SelectItems<T>[]) {
-    this.sections = this.intializeSections(items);
-  }
+    public constructor(items: SelectItems<T>[], setState: Updater<SelectUtility<T>>) {
+        this.setState = setState;
+        this.sections = this.intializeSections(items);
+    }
 
-  private updateState = (): void => {
-    if (this.setState)
-      this.setState({ ...this });
-  };
+    // Functions
+    private intializeSections = (newItems: SelectItems<T>[]): Section<T>[] => {
 
-  private intializeSections = (newItems: SelectItems<T>[]): Section<T>[] => {
+        const newSections: Section<T>[] = [];
+        newItems.forEach((newItem) => {
+            newItem.sectionNames.forEach(sectionName => {
+                const sectionInNewState = newSections.find(section => section.name === sectionName);
+                const itemInOldState = this.sections.find(section => section.name === sectionName)?.items.find(item => item.name === newItem.name);
 
-    const newSections: Section<T>[] = [];
-    newItems.forEach((newItem) => {
-      const sectionInNewState = newSections.find(section => section.getName() === newItem.sectionName);
-      const itemInOldState = this.sections.find(section => section.getName() === newItem.sectionName)?.getItems().find(item => item.getName() === newItem.itemName);
+                // add new section and new item 
+                if (!sectionInNewState) {
+                    newSections.push(new Section([newItem], sectionName, this.setState));
+                    return;
+                }
 
-      // add new section and new item 
-      if (!sectionInNewState) {
-        newSections.push(new Section([newItem], this.updateState));
-        return;
-      }
+                // add exsisting item to exsisting section
+                if (itemInOldState) {
+                    sectionInNewState.items.push(itemInOldState);
+                    return;
+                }
 
-      // add exsisting item to exsisting section
-      if (itemInOldState) {
-        sectionInNewState.getItems().push(itemInOldState);
-        return;
-      }
+                // add new item to exsisting state
+                if (!itemInOldState) {
+                    sectionInNewState.items.push(new Item(newItem, sectionName, this.setState));
+                    return;
+                }
+            });
 
-      // add new item to exsisting state
-      if (!itemInOldState) {
-        sectionInNewState.getItems().push(new Item(newItem, this.updateState));
-        return;
-      }
-    });
+        });
 
-    return newSections;
-  };
+        return newSections;
+    };
 
-  public setHandler = (setState: Dispatch<SetStateAction<SelectUtility<T>>>): void => {
-    this.setState = setState;
-  };
+    public isAnyItemChecked = (): boolean => {
+        return !!this.sections.find(section => section.isAnySelected());
+    };
 
-  public setUtility = (newItems: SelectItems<T>[]): void => {
-    this.sections = this.intializeSections(newItems);
-    this.updateState();
-  };
+    public getSelectedSections = (): Section<T>[] => {
+        return this.sections.filter(section => section.isAnySelected());
+    };
 
-  public isAnyItemChecked = (): boolean => {
-    return !!this.sections.find(section => section.isAnySelected());
-  };
+    // Setters
+    public setUtility = (initialItems: SelectItemsBase<T>[]): void => {
+        this.setState((draft: WritableDraft<SelectUtility<T>>): void => {
+            const selectItems = createSelectItemsArr<T>(initialItems);
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            draft = castDraft(new SelectUtility(selectItems, this.setState));
+        });
+    };
 
-  public setSections = (sections: Section<T>[]): void => {
-    this.sections = sections;
-  };
-
-  public getSelectedSections = (): Section<T>[] => {
-    return this.sections.filter(section => section.isAnySelected());
-  };
-
-  public getSections = (): Section<T>[] => {
-    return this.sections;
-  };
+    public setSections = (sections: Section<T>[]): void => {
+        this.setState((draft: WritableDraft<SelectUtility<T>>): void => {
+            draft.sections = castDraft(sections);
+        });
+    };
 }
 

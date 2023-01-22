@@ -4,15 +4,15 @@ import { Container } from '@mui/system';
 
 const Header: React.FC<Record<string, never>> = () => {
 
-  return (
-    <>
-      {/* <Container sx={{ justifyContent: 'center' }}>
+    return (
+        <>
+            {/* <Container sx={{ justifyContent: 'center' }}>
           <Typography variant="h6" color="inherit" noWrap >
             Auto Reddit
           </Typography>
         </Container> */}
-    </>
-  );
+        </>
+    );
 };
 
 export default Header;
