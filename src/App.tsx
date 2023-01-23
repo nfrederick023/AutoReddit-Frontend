@@ -15,49 +15,47 @@ import ToastComponent from './app/components/common/layout/toast';
 
 const App: React.FC<Record<string, never>> = () => {
 
-  const theme = createTheme({
-    palette: {
-      mode: 'dark',
-    },
-  });
+    const theme = createTheme({
+        palette: {
+            mode: 'dark',
+        },
+    });
 
-  return (
-    <ThemeProvider theme={theme}>
+    return (
+        <ThemeProvider theme={theme}>
 
-      <CssBaseline />
-      <ToastComponent />
-      <Header />
-      <Container
-        disableGutters={true}
-        sx={{
-          position: 'relative',
-          minHeight: '100vh',
-          minWidth: '100vw',
-          pl: '0px'
-        }}>
+            <CssBaseline />
+            <ToastComponent />
+            <Header />
+            <Container
+                disableGutters={true}
+                sx={{
+                    position: 'relative',
+                    minHeight: '100vh',
+                    minWidth: '100vw',
+                    pl: '0px'
+                }}>
 
-        <Container
-          maxWidth="lg"
-          sx={{
-            pb: '100px',
-            pt: '20px',
-          }}
-        >
-          <NavBar />
-          <Routes>
-            <Route path="/" element={<DashboardPage />} />
-            <Route path="/options" element={<OptionsPage />} />
-            <Route path="/subreddits" element={<SubredditsPage />} />
-            <Route path="/schedule" element={<SchedulePage />} />
-            <Route path='*' element={<ErrorPage />} />
-          </Routes>
+                <Container
+                    maxWidth="lg"
+                    sx={{
+                        pb: '100px',
+                        pt: '20px',
+                    }}
+                >
+                    <Routes>
+                        <Route path="/" element={<DashboardPage />} />
+                        <Route path="/options" element={<OptionsPage />} />
+                        <Route path="/subreddits" element={<SubredditsPage />} />
+                        <Route path="/schedule" element={<SchedulePage />} />
+                        <Route path='*' element={<ErrorPage />} />
+                    </Routes>
 
-        </Container>
-        <Footer />
-      </Container>
-      <Loader />
-    </ThemeProvider >
-  );
+                </Container>
+            </Container>
+            <Loader />
+        </ThemeProvider >
+    );
 };
 
 export default App;

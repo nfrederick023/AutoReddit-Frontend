@@ -6,7 +6,7 @@ import { ChangeEvent, ReactElement, ReactNode, useReducer } from 'react';
 import { DashboardCellBody, DashboardCellHeader } from './common/styled/styledTableCell';
 import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { FileUpload } from '@mui/icons-material';
-import { Item, SelectItems, SelectItemsBase, useCheckbox } from '../hooks/useCheckbox';
+import { Item, SelectUtilityBase, SetItemBase, useCheckbox } from '../hooks/useCheckbox';
 import { Link } from '@mui/material';
 import { MenuItem } from '@mui/material';
 import { Subreddit } from '../utils/types';
@@ -24,14 +24,14 @@ enum Tag {
 }
 
 interface DetailedSubreddit extends Subreddit {
-    readonly subredditPostOptions: SubredditPostOptions;
+    subredditPostOptions: SubredditPostOptions;
 }
 
 // selected subreddit options
 class SubredditPostOptions {
     public title: string;
     public flair: string;
-    public readonly tags: Tag[];
+    public tags: Tag[];
 
     constructor() {
         this.tags = [];
@@ -42,7 +42,7 @@ class SubredditPostOptions {
 
 // default selected options
 class Post {
-    public readonly tags: Tag[];
+    public tags: Tag[];
     public comment: string;
     public imageLink: string;
     public date: Dayjs;
@@ -75,20 +75,21 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
             return;
 
         // sort by subreddit name
-        subreddits.sort((a, b) => {
-            const textA = a.name.toLowerCase();
-            const textB = b.name.toLowerCase();
-            return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
-        });
+        // subreddits.sort((a, b) => {
+        //     const textA = a.name.toLowerCase();
+        //     const textB = b.name.toLowerCase();
+        //     return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;
+        // });
 
         // creates matrix of subreddits to add as checkboxes
-        const checkedState: SelectItemsBase<DetailedSubreddit>[] = [];
+        const checkedState: SelectUtilityBase<DetailedSubreddit>[] = [];
         subreddits.forEach((subreddit) => {
-            checkedState.push({ name: subreddit.name, properties: { ...subreddit, subredditPostOptions: new SubredditPostOptions() } });
+            checkedState.push({ itemName: subreddit.name, properties: { ...subreddit, subredditPostOptions: new SubredditPostOptions() } });
         });
 
-        checkBoxUtility.setUtility(checkedState);
+        checkBoxUtility.createNewUtility(checkedState);
     };
+
 
     /* Actions */
     useEffect(() => {
@@ -152,7 +153,7 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
             {checkBoxUtility.sections.map((section) => {
                 return (
 
-                    <Container key={section.name} disableGutters >
+                    <Container key={section.sectionName} disableGutters >
 
                         {/* Select All Checkbox */}
                         <TableContainer >
@@ -203,19 +204,19 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
                                     {section.items.map((subreddit) => {
 
                                         return (
-                                            <TableRow key={`${section.name}_${subreddit.name}_form`}>
+                                            <TableRow key={`${section.sectionName}_${subreddit.itemName}_form`}>
 
                                                 <DashboardCellBody align="right">
                                                     <Box sx={{ display: 'flex', alignItems: 'center' }} >
                                                         <FormControlLabel
                                                             sx={{ height: '100%', alignItems: 'end', ml: '-6px', mr: '4px' }}
-                                                            label={('r/') + subreddit.name}
+                                                            label={('r/') + subreddit.itemName}
                                                             control={
                                                                 <BpCheckbox
                                                                     sx={{ pl: 1, pb: '5px' }}
-                                                                    checked={subreddit.isSelected}
+                                                                    checked={subreddit.selected}
                                                                     onChange={(): void => {
-                                                                        subreddit.selectItem();
+                                                                        subreddit.select();
                                                                     }}
                                                                 />
                                                             }
@@ -292,7 +293,7 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
                                                     }
                                                 </DashboardCellBody>
                                                 <DashboardCellBody align="right">
-                                                    <Link href={`https://www.reddit.com/r/${subreddit.name}`} target="_blank" sx={{ position: 'relative', top: '4px' }}>
+                                                    <Link href={`https://www.reddit.com/r/${subreddit.itemName}`} target="_blank" sx={{ position: 'relative', top: '4px' }}>
                                                         <LinkIcon sx={{ mt: '8px' }} />
                                                     </Link>
                                                 </DashboardCellBody>
