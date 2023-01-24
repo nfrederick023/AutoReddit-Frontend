@@ -6,11 +6,12 @@ import { ChangeEvent, ReactElement, ReactNode, useReducer } from 'react';
 import { DashboardCellBody, DashboardCellHeader } from './common/styled/styledTableCell';
 import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { FileUpload } from '@mui/icons-material';
-import { Item, SelectUtilityBase, SetItemBase, useCheckbox } from '../hooks/useCheckbox';
+import { Item, SelectUtilityBase } from '@custom/types';
 import { Link } from '@mui/material';
 import { MenuItem } from '@mui/material';
 import { Subreddit } from '../utils/types';
 import { TextFieldProps } from '@mui/material';
+import { useCheckbox } from '../hooks/useCheckbox';
 import { useEffect, useState } from 'react';
 import { useGetSubredditListQuery } from '../store/services/subredditList';
 import InfoIcon from '@mui/icons-material/Info';
@@ -153,7 +154,7 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
             {checkBoxUtility.sections.map((section) => {
                 return (
 
-                    <Container key={section.sectionName} disableGutters >
+                    <Container key={section.name} disableGutters >
 
                         {/* Select All Checkbox */}
                         <TableContainer >
@@ -204,17 +205,17 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
                                     {section.items.map((subreddit) => {
 
                                         return (
-                                            <TableRow key={`${section.sectionName}_${subreddit.itemName}_form`}>
+                                            <TableRow key={`${section.name}_${subreddit.name}_form`}>
 
                                                 <DashboardCellBody align="right">
                                                     <Box sx={{ display: 'flex', alignItems: 'center' }} >
                                                         <FormControlLabel
                                                             sx={{ height: '100%', alignItems: 'end', ml: '-6px', mr: '4px' }}
-                                                            label={('r/') + subreddit.itemName}
+                                                            label={('r/') + subreddit.name}
                                                             control={
                                                                 <BpCheckbox
                                                                     sx={{ pl: 1, pb: '5px' }}
-                                                                    checked={subreddit.selected}
+                                                                    checked={subreddit.isSelected}
                                                                     onChange={(): void => {
                                                                         subreddit.select();
                                                                     }}
@@ -293,7 +294,7 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
                                                     }
                                                 </DashboardCellBody>
                                                 <DashboardCellBody align="right">
-                                                    <Link href={`https://www.reddit.com/r/${subreddit.itemName}`} target="_blank" sx={{ position: 'relative', top: '4px' }}>
+                                                    <Link href={`https://www.reddit.com/r/${subreddit.name}`} target="_blank" sx={{ position: 'relative', top: '4px' }}>
                                                         <LinkIcon sx={{ mt: '8px' }} />
                                                     </Link>
                                                 </DashboardCellBody>

@@ -1,119 +1,23 @@
+/* eslint-disable func-style */
 // react-checkbox-hook
-// reach-checkbox
+// react-checkbox
 
-import { WritableDraft } from 'immer/dist/internal';
-import { castDraft } from 'immer';
+import { ActionStfy, ActionType, SelectUtility, SelectUtilityBase } from '@custom/types';
+import { Draft, WritableDraft } from 'immer/dist/internal';
+import { castDraft, immerable } from 'immer';
 import { useImmerReducer } from 'use-immer';
 
-export interface SelectUtilityBase<P> {
-    itemName: string;
-    sectionName?: string;
-    selected?: boolean;
-    properties?: P;
-}
-
-export interface Item<P> {
-    itemName: string;
-    selected: boolean;
-    properties: P;
-    readonly select: () => void;
-    readonly setItemName: (newName: string) => void;
-    readonly setProperties: (properties: P) => void;
-    readonly setSelected: (selected: boolean) => void;
-}
-
-export interface Section<P> {
-    sectionName: string;
-    items: Item<P>[];
-    readonly setItems: (items: Item<P>[]) => void;
-    readonly setSectionName: (newName: string) => void;
-    readonly selectAll: () => void;
-    readonly getSelectedItems: () => Item<P>[];
-    readonly isAnySelected: () => boolean;
-    readonly isAllSelected: () => boolean;
-    readonly isIndeterminate: () => boolean;
-}
-
-export interface SelectUtility<P> {
-    sections: Section<P>[];
-    readonly setSections: (section: Section<P>[]) => void;
-    readonly isAnyItemChecked: () => boolean;
-    readonly getSelectedSections: () => Section<P>[];
-    readonly createNewUtility: (items: SelectUtilityBase<P>[]) => void;
-}
-
 export enum Action {
-    // item
-    Select,
-    SetProperties,
-    SetItemName,
-    SetSelected,
-
-    // section
-    SetSectionName,
-    SetItems,
-    SelectAll,
-
-    // utlity
-    SetSections,
-    CreateNewUtility
+    Select = 0,
+    SetProperties = 1,
+    SetItemName = 2,
+    SetSelected = 3,
+    SetSectionName = 4,
+    SetItems = 5,
+    SelectAll = 6,
+    SetSections = 7,
+    CreateNewUtility = 8
 }
-
-export interface SetSectionBase {
-    readonly sectionName: string
-}
-
-export interface SetItemBase extends SetSectionBase {
-    readonly itemName: string
-}
-
-// item action params
-export interface SetProperties<P> extends SetItemBase {
-    readonly properties: P
-}
-
-export interface SetItemName extends SetItemBase {
-    readonly newName: string
-}
-
-export interface SetSelected extends SetItemBase {
-    readonly selected: boolean
-}
-
-// section action params
-export interface SetSectionName extends SetSectionBase {
-    readonly newName: string
-}
-
-export interface SetItems<P> extends SetSectionBase {
-    readonly items: Item<P>[]
-}
-
-// utlity
-export interface SetSections<P> {
-    sections: Section<P>[]
-}
-
-export interface CreateNewUtility<P> {
-    items: SelectUtilityBase<P>[]
-}
-
-export interface ActionType<T extends Action, P> {
-    type: T,
-    params:
-    T extends Action.Select ? SetItemBase :
-    T extends Action.SetProperties ? SetProperties<P> :
-    T extends Action.SetItemName ? SetItemName :
-    T extends Action.SetSelected ? SetSelected :
-    T extends Action.SetSectionName ? SetSectionName :
-    T extends Action.SetItems ? SetItems<P> :
-    T extends Action.SelectAll ? SetSectionBase :
-    T extends Action.SetSections ? SetSections<P> :
-    T extends Action.CreateNewUtility ? CreateNewUtility<P> : never;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-type ActionStfy<T extends Action, P> = Record<keyof ActionType<T, P>, ActionType<T, P>[keyof ActionType<T, P>]>;
 
 /**
  * A hook for checkboxes with select all. 
@@ -122,231 +26,205 @@ type ActionStfy<T extends Action, P> = Record<keyof ActionType<T, P>, ActionType
  */
 export const useCheckbox = <P = Record<string, never>>(items: SelectUtilityBase<P>[]): [SelectUtility<P>] => {
 
-    let globalSelectUtility: SelectUtility<P> | undefined = undefined;
+    class SelectUtility<J extends P> {
+        [immerable] = true;
+        public readonly sections: Section<J>[];
 
-    const findSectionInState = (sectionName: string): Section<P> | undefined => {
-        return state.sections.find(section => section.sectionName === sectionName);
-    };
+        constructor(sections: Section<J>[]) {
+            this.sections = sections;
+        }
 
-    // item actions
-    const select = (sectionName: string, itemName: string): () => void => {
-        const type = Action.Select;
-        return (): void => {
-            setState({
-                type, params: { itemName, sectionName }
-            } satisfies ActionStfy<typeof type, P>);
-        };
-    };
-
-    const setProperties = (sectionName: string, itemName: string): (properties: P) => void => {
-        const type = Action.SetProperties;
-        return (properties: P): void => {
-            setState({
-                type, params: { properties, itemName, sectionName }
-            } satisfies ActionStfy<typeof type, P>);
-        };
-    };
-
-    const setItemName = (sectionName: string, itemName: string): (newName: string) => void => {
-        const type = Action.SetItemName;
-        return (newName: string): void => {
-            setState({
-                type, params: { newName, itemName, sectionName }
-            } satisfies ActionStfy<typeof type, P>);
-        };
-    };
-
-    const setSelected = (sectionName: string, itemName: string): (selected: boolean) => void => {
-        const type = Action.SetSelected;
-        return (selected: boolean): void => {
-            setState({
-                type, params: { selected, itemName, sectionName }
-            } satisfies ActionStfy<typeof type, P>);
-        };
-    };
-
-    // section actions
-    const setSectionName = (sectionName: string): (newName: string) => void => {
-        const type = Action.SetSectionName;
-        return (newName: string): void => {
-            setState({
-                type, params: { newName, sectionName }
-            } satisfies ActionStfy<typeof type, P>);
-        };
-    };
-
-    const setItems = (sectionName: string): (items: Item<P>[]) => void => {
-        const type = Action.SetItems;
-        return (items: Item<P>[]): void => {
-            setState({
-                type, params: { items, sectionName }
-            } satisfies ActionStfy<typeof type, P>);
-        };
-    };
-
-    const selectAll = (sectionName: string): () => void => {
-        const type = Action.SelectAll;
-        return (): void => {
-            setState({
-                type, params: { sectionName }
-            } satisfies ActionStfy<typeof type, P>);
-        };
-    };
-
-    // utility actions
-    const setSections = (): (sections: Section<P>[]) => void => {
-        const type = Action.SetSections;
-        return (sections: Section<P>[]): void => {
+        public setSections(sections: Section<P>[]): void {
+            const type = Action.SetSections;
             setState({
                 type, params: { sections }
             } satisfies ActionStfy<typeof type, P>);
-        };
-    };
+        }
 
-    const createNewUtility = (): (items: SelectUtilityBase<P>[]) => void => {
-
-        const type = Action.CreateNewUtility;
-        return (items: SelectUtilityBase<P>[]): void => {
+        public createNewUtility(items: SelectUtilityBase<P>[]): void {
+            const type = Action.CreateNewUtility;
             setState({
                 type, params: { items }
             } satisfies ActionStfy<typeof type, P>);
-        };
-    };
+        }
 
-    // section functions
-    const isIndeterminate = (sectionName: string): () => boolean => {
-        return (): boolean => {
-            const section = findSectionInState(sectionName);
-            if (section) {
-                if (section.isAllSelected())
-                    return false;
+        public isAnyItemChecked(): boolean {
+            return !!this.sections.find(section => section.isAnySelected());
+        }
 
-                return section.items.some(item => item.selected);
-            }
-            return false;
-        };
-    };
+        public getSelectedSections(): Section<P>[] {
+            return this.sections.filter(section => section.isAnySelected()) ?? [];
+        }
+    }
 
-    const isAllSelected = (sectionName: string): () => boolean => {
-        return (): boolean => {
-            const section = findSectionInState(sectionName);
+    class Section<J extends P> {
+        [immerable] = true;
+        public readonly name: string;
+        public readonly items: Item<J>[];
 
-            if (section) {
-                section.items.forEach(item => {
-                    console.log(item.selected);
-                });
-                console.log(state);
-                return !section.items.filter(item => !item.selected).length;
-            }
-            return false;
-        };
-    };
+        constructor(name: string, items: Item<J>[]) {
+            this.name = name;
+            this.items = items;
+        }
 
-    const isAnySelected = (sectionName: string): () => boolean => {
-        return (): boolean => {
-            const section = findSectionInState(sectionName);
-            if (section) {
-                return section.isIndeterminate() || section.isAllSelected();
-            }
-            return false;
-        };
-    };
+        public setSectionName(name: string): void {
+            const type = Action.SetSectionName;
+            setState({
+                type, params: { name, section: this }
+            } satisfies ActionStfy<typeof type, P>);
+        }
 
-    const getSelectedItems = (sectionName: string): () => Item<P>[] => {
-        return (): Item<P>[] => {
-            const section = findSectionInState(sectionName);
-            if (section) {
-                return section.items.filter(item => item.selected);
-            }
-            return [];
-        };
+        public setItems(items: Item<P>[]): void {
+            const type = Action.SetItems;
+            setState({
+                type, params: { items, section: this }
+            } satisfies ActionStfy<typeof type, P>);
+        }
 
-    };
+        public selectAll(): void {
+            const type = Action.SelectAll;
+            setState({
+                type, params: { section: this }
+            });
+        }
 
-    // utility functions
-    const isAnyItemChecked = (): () => boolean => {
-        return (): boolean => {
-            return !!globalSelectUtility?.sections.find(section => section.isAnySelected());
-        };
-    };
+        public isIndeterminate(): boolean {
+            if (this.isAllSelected())
+                return false;
 
-    const getSelectedSections = (): () => Section<P>[] => {
-        return (): Section<P>[] => {
-            return globalSelectUtility?.sections.filter(section => section.isAnySelected()) ?? [];
-        };
-    };
+            return this.items.some(item => item.isSelected);
+        }
+
+        public isAllSelected(): boolean {
+            return !this.items.filter(item => !item.isSelected).length;
+        }
+
+        public isAnySelected(): boolean {
+            return this.isIndeterminate() || this.isAllSelected();
+        }
+
+        public getSelectedItems(): Item<P>[] {
+            return this.items.filter(item => item.isSelected);
+        }
+    }
+
+    class Item<J extends P> {
+        [immerable] = true;
+        public readonly name: string;
+        public readonly isSelected: boolean;
+        public readonly sectionName: string;
+        public readonly properties: J;
+
+        constructor(name: string, sectionName: string, isSelected: boolean, properties: J) {
+            this.name = name;
+            this.sectionName = sectionName;
+            this.isSelected = isSelected;
+            this.properties = properties;
+        }
+
+        public select(): void {
+            const type = Action.Select;
+            setState({
+                type, params: { item: this }
+            } satisfies ActionStfy<typeof type, P>);
+        }
+
+        public setProperties(properties: P): void {
+            const type = Action.SetProperties;
+            setState({
+                type, params: { properties, item: this }
+            } satisfies ActionStfy<typeof type, P>);
+        }
+
+        public setItemName(name: string): void {
+            const type = Action.SetItemName;
+            setState({
+                type, params: { name, item: this }
+            } satisfies ActionStfy<typeof type, P>);
+        }
+
+        public setSelected(isSelected: boolean): void {
+            const type = Action.SetSelected;
+            setState({
+                type, params: { isSelected, item: this }
+            }  satisfies ActionStfy<typeof type, P>);
+        }
+    }
 
     // reducer
     const selectUtilityReducer = (draft: WritableDraft<SelectUtility<P>>, action: ActionType<Action, P>): void => {
         const getItem = (sectionName: string, itemName: string): WritableDraft<Item<P>> | undefined => {
-            return getSection(sectionName)?.items.find(item => item.itemName === itemName);
+            return getSection(sectionName)?.items.find(item => item.name === itemName);
         };
 
         const getSection = (sectionName: string): WritableDraft<Section<P>> | undefined => {
-            return draft.sections.find(section => section.sectionName === sectionName);
+            return draft.sections.find(section => section.name === sectionName);
         };
 
         switch (action.type) {
             case Action.Select: {
                 const actionT = action as ActionType<typeof action.type, P>;
-                const item = getItem(actionT.params.sectionName, actionT.params.itemName);
-                if (item)
-                    item.selected = !item.selected;
+                const item = getItem(actionT.params.item.sectionName, actionT.params.item.name);
+
+                if (item) {
+                    item.isSelected = !item.isSelected;
+                }
+
                 break;
             }
 
             case Action.SetProperties: {
                 const actionT = action as ActionType<typeof action.type, P>;
-                const item = getItem(actionT.params.sectionName, actionT.params.itemName);
+                const item = getItem(actionT.params.item.sectionName, actionT.params.item.name);
                 if (item)
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                    //@ts-ignore
-                    item.properties = castDraft(actionT.params.properties);
+                    item.properties = castDraft(actionT.params.properties) as P extends object ? Draft<P> : P;
                 break;
             }
 
             case Action.SetItemName: {
                 const actionT = action as ActionType<typeof action.type, P>;
-                const item = getItem(actionT.params.sectionName, actionT.params.itemName);
+                const item = getItem(actionT.params.item.sectionName, actionT.params.item.name);
                 if (item)
-                    item.itemName = actionT.params.newName;
+                    item.name = actionT.params.name;
                 break;
             }
 
             case Action.SetSelected: {
                 const actionT = action as ActionType<typeof action.type, P>;
-                const item = getItem(actionT.params.sectionName, actionT.params.itemName);
+                const item = getItem(actionT.params.item.sectionName, actionT.params.item.name);
                 if (item)
-                    item.selected = actionT.params.selected;
+                    item.isSelected = actionT.params.isSelected;
                 break;
             }
 
             case Action.SetSectionName: {
                 const actionT = action as ActionType<typeof action.type, P>;
-                const section = getSection(actionT.params.sectionName);
+                const section = getSection(actionT.params.section.name);
                 if (section)
-                    section.sectionName = actionT.params.newName;
+                    section.name = actionT.params.name;
                 break;
             }
 
             case Action.SetItems: {
                 const actionT = action as ActionType<typeof action.type, P>;
-                const section = getSection(actionT.params.sectionName);
+                const section = getSection(actionT.params.section.name);
                 if (section)
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                    //@ts-ignore
                     section.items = castDraft(actionT.params.items);
                 break;
             }
 
             case Action.SelectAll: {
                 const actionT = action as ActionType<typeof action.type, P>;
-                const section = getSection(actionT.params.sectionName);
+                const section = getSection(actionT.params.section.name);
                 if (section) {
                     const isIndeterminate = section.isIndeterminate();
                     section.items.forEach((item) => {
                         if (isIndeterminate)
-                            item.setSelected(true);
+                            item.isSelected = true;
                         else
-                            item.select();
+                            item.isSelected = !item.isSelected;
                     });
                 }
                 break;
@@ -354,13 +232,14 @@ export const useCheckbox = <P = Record<string, never>>(items: SelectUtilityBase<
 
             case Action.SetSections: {
                 const actionT = action as ActionType<typeof action.type, P>;
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                //@ts-ignore
                 draft.sections = castDraft(actionT.params.sections);
                 break;
             }
 
             case Action.CreateNewUtility: {
                 const actionT = action as ActionType<typeof action.type, P>;
-
 
                 const newUtility = intializeUtility(actionT.params.items);
                 draft.sections = castDraft(newUtility.sections);
@@ -375,47 +254,22 @@ export const useCheckbox = <P = Record<string, never>>(items: SelectUtilityBase<
     const intializeUtility = (items: SelectUtilityBase<P>[]): SelectUtility<P> => {
         const sections: Section<P>[] = [];
         items.forEach((newItem) => {
+
+            // default values
+            newItem.isSelected ??= false;
+            newItem.properties ??= {} as P;
             newItem.sectionName ??= 'unnamed_section';
 
-            const createSection = (): Section<P> => {
-                newItem.sectionName ??= 'unnamed_section';
-
-                return {
-                    sectionName: newItem.sectionName,
-                    items: [createItem()],
-                    setItems: setItems(newItem.sectionName),
-                    setSectionName: setSectionName(newItem.sectionName),
-                    selectAll: selectAll(newItem.sectionName),
-                    getSelectedItems: getSelectedItems(newItem.sectionName),
-                    isAnySelected: isAnySelected(newItem.sectionName),
-                    isAllSelected: isAllSelected(newItem.sectionName),
-                    isIndeterminate: isIndeterminate(newItem.sectionName),
-                };
-            };
-
-            const createItem = (): Item<P> => {
-                newItem.selected ??= false;
-                newItem.properties ??= {} as P;
-                newItem.sectionName ??= 'unnamed_section';
-
-                return {
-                    itemName: newItem.itemName,
-                    selected: newItem.selected,
-                    properties: newItem.properties,
-                    select: select(newItem.sectionName, newItem.itemName),
-                    setItemName: setItemName(newItem.sectionName, newItem.itemName),
-                    setProperties: setProperties(newItem.sectionName, newItem.itemName),
-                    setSelected: setSelected(newItem.sectionName, newItem.itemName)
-                };
-            };
-
-            const sectionInNewState = sections.find(section => section.sectionName === newItem.sectionName);
-            const itemInOldState = globalSelectUtility?.sections.find(section => section.sectionName === newItem.sectionName)?.items.find(item => item.itemName === newItem.itemName);
-
+            const sectionInNewState = sections.find(section => section.name === newItem.sectionName);
+            let itemInOldState: Item<P> | undefined = undefined;
+            try {
+                itemInOldState = state.sections.find(section => section.name === newItem.sectionName)?.items.find(item => item.name === newItem.itemName);
+            } catch (e) { /* empty */ }
 
             // add new section and new item
             if (!sectionInNewState) {
-                sections.push(createSection());
+                sections.push(new Section<P>(newItem.sectionName, [new Item<P>(newItem.itemName, newItem.sectionName, newItem.isSelected, newItem.properties)])
+                );
                 return;
             }
 
@@ -427,26 +281,17 @@ export const useCheckbox = <P = Record<string, never>>(items: SelectUtilityBase<
 
             // add new item to exsisting state
             if (!itemInOldState) {
-                sectionInNewState.items.push(createItem());
+                sectionInNewState.items.push(new Item<P>(newItem.itemName, newItem.sectionName, newItem.isSelected, newItem.properties));
                 return;
             }
 
         });
 
-        const selectUtility: SelectUtility<P> = {
-            sections,
-            setSections: setSections(),
-            isAnyItemChecked: isAnyItemChecked(),
-            getSelectedSections: getSelectedSections(),
-            createNewUtility: createNewUtility()
-        };
-
-        return selectUtility;
+        return new SelectUtility(sections);
     };
 
     // state
     const [state, setState] = useImmerReducer<SelectUtility<P>, ActionType<Action, P>>((draft, action) => { selectUtilityReducer(draft, action); }, intializeUtility(items));
 
-    globalSelectUtility = state;
     return [state];
 };

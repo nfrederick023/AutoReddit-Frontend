@@ -21,6 +21,12 @@
         "jsx": "react-jsx",
         "strictNullChecks": true,
         "noImplicitAny": true,
+        "baseUrl": "./",
+        "paths": {
+            "@*": [
+                "src/*"
+            ]
+        }
     },
     "include": [
         "src",
