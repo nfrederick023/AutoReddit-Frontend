@@ -23,13 +23,14 @@
         "noImplicitAny": true,
         "baseUrl": "./",
         "paths": {
-            "@*": [
-                "src/*"
+            "*": [
+                "src/types/*"
             ]
-        }
+        },
     },
     "include": [
         "src",
-        "src/app/store/store.ts"
+        "src/app/store/store.ts",
+        "src/types",
     ]
 }

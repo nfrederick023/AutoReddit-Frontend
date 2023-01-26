@@ -2,16 +2,15 @@ import * as React from 'react';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { Autocomplete, Box, Button, Checkbox, Container, Divider, FormControlLabel, Grid, InputLabel, ListItemText, Paper, Select, SelectChangeEvent, Table, TableBody, TableContainer, TableHead, TableRow, TextField, Typography } from '@mui/material';
 import { BpCheckbox } from './common/styled/styledCheckbox';
-import { ChangeEvent, ReactElement, ReactNode, useReducer } from 'react';
+import { ChangeEvent, ReactElement, ReactNode } from 'react';
+import { CheckboxHookBase, Item, useCheckbox } from 'react-hook-checkbox';
 import { DashboardCellBody, DashboardCellHeader } from './common/styled/styledTableCell';
 import { DatePicker, LocalizationProvider, TimePicker } from '@mui/x-date-pickers';
 import { FileUpload } from '@mui/icons-material';
-import { Item, SelectUtilityBase } from '@custom/types';
 import { Link } from '@mui/material';
 import { MenuItem } from '@mui/material';
 import { Subreddit } from '../utils/types';
 import { TextFieldProps } from '@mui/material';
-import { useCheckbox } from '../hooks/useCheckbox';
 import { useEffect, useState } from 'react';
 import { useGetSubredditListQuery } from '../store/services/subredditList';
 import InfoIcon from '@mui/icons-material/Info';
@@ -62,13 +61,12 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
 
     /* Hooks */
     const { data: subreddits } = useGetSubredditListQuery();
-    const [expanded, setExpanded] = useState<string[]>([]);
+    //const [expanded, setExpanded] = useState<string[]>([]);
     const [imgurl, setImageUrl] = useState('');
     const [displayPreview, setDisplayPreview] = useState(true);
-    const [checkBoxUtility] = useCheckbox<DetailedSubreddit>([]);
+    const [checkBoxUtility] = useCheckbox<DetailedSubreddit, string>([]);
     const [isCommentIncluded, setIsCommentIncluded] = useState(true);
     const [postDetails, setPostDetails] = useState<Post>(new Post());
-
     const sourceText = '[Source](https://www.pixiv.com/kdnikdn/sndndask)';
 
     const sortSubreddits = (): void => {
@@ -83,14 +81,17 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
         // });
 
         // creates matrix of subreddits to add as checkboxes
-        const checkedState: SelectUtilityBase<DetailedSubreddit>[] = [];
+        const checkedState: CheckboxHookBase<DetailedSubreddit, string>[] = [];
         subreddits.forEach((subreddit) => {
-            checkedState.push({ itemName: subreddit.name, properties: { ...subreddit, subredditPostOptions: new SubredditPostOptions() } });
+            subreddit.categories.forEach(category => {
+                checkedState.push({ itemName: subreddit.name, sectionName: category, itemProperties: { ...subreddit, subredditPostOptions: new SubredditPostOptions() }, sectionProperties: 'hello' });
+            });
         });
 
-        checkBoxUtility.createNewUtility(checkedState);
+        checkBoxUtility.createCheckboxHook(checkedState);
     };
 
+    console.log(checkBoxUtility);
 
     /* Actions */
     useEffect(() => {
@@ -126,13 +127,13 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
         setImageUrl(URL.createObjectURL(file ?? new Blob()));
     };
 
-    const isAccordionExpanded = (accordionName: string): boolean => {
-        return expanded?.includes(accordionName);
-    };
+    // const isAccordionExpanded = (accordionName: string): boolean => {
+    //     return expanded?.includes(accordionName);
+    // };
 
-    const handleExpand = (panelName: string): void => {
-        setExpanded(expanded?.includes(panelName) ? expanded.filter(name => name !== panelName) : [panelName, ...expanded]);
-    };
+    // const handleExpand = (panelName: string): void => {
+    //     setExpanded(expanded?.includes(panelName) ? expanded.filter(name => name !== panelName) : [panelName, ...expanded]);
+    // };
 
     const handleDateChange = (date: Dayjs | null): void => {
         date ??= dayjs().add(30, 'minutes');
@@ -150,12 +151,34 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
     return (
         <>
             {!subreddits?.length ? <Typography>No Subreddits Found.</Typography> : <></>}
+            <Button
+                onClick={(): void => { checkBoxUtility.addSection({ name: 'kwmew', items: [], properties: 'kwnekwe' }); }}
 
+            >
+                nnnnnnnnn
+            </Button>
             {checkBoxUtility.sections.map((section) => {
                 return (
 
-                    <Container key={section.name} disableGutters >
+                    <Container key={section.id} disableGutters >
 
+                        <Button
+                            onClick={(): void => { section.addItem({ itemName: 'wdkwbndkw', properties: { name: 'test', notes: [], categories: [], info: { flairs: [], url: '', isNSFW: true, isCrosspostable: false, allowsVideoGifs: true, allowsVideos: true }, subredditPostOptions: new SubredditPostOptions() } }); }}
+
+                        >
+                            Add Item
+                        </Button>
+                        <Button
+                            onClick={(): void => { section.setSectionName('jwbewjb'); }}
+                        >
+                            Renname Section
+                        </Button>
+                        <Button
+                            onClick={(): void => { section.setProperties('ewqewqeq'); }}
+                        >
+                            Set properties
+                        </Button>
+                        {section.name}
                         {/* Select All Checkbox */}
                         <TableContainer >
                             <Table >
@@ -192,6 +215,12 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
                                             <Typography>
                                                 Post Title
                                             </Typography>
+                                            <Button
+                                                onClick={(): void => { section.removeSection(); }}
+
+                                            >
+                                                aaaaa
+                                            </Button>
                                         </DashboardCellHeader>
                                         <DashboardCellHeader align="right" width="1%" />
                                         <DashboardCellHeader align="right" width="1%" />
@@ -205,7 +234,7 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
                                     {section.items.map((subreddit) => {
 
                                         return (
-                                            <TableRow key={`${section.name}_${subreddit.name}_form`}>
+                                            <TableRow key={`${section.id}_${subreddit.id}_form`}>
 
                                                 <DashboardCellBody align="right">
                                                     <Box sx={{ display: 'flex', alignItems: 'center' }} >
@@ -275,7 +304,12 @@ const DashboardPage: React.FC<Record<string, never>> = () => {
                                                             </MenuItem>
                                                         ))}
                                                     </Select>
+                                                    <Button
+                                                        onClick={(): void => { subreddit.removeItem(); }}
 
+                                                    >
+                                                        aaaaa
+                                                    </Button>
                                                 </DashboardCellBody>
                                                 <DashboardCellBody align="right">
 
