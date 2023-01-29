@@ -1,41 +1,18 @@
-export declare function useCheckbox<P>(items: CheckboxHookBase<P>[]): [CheckboxHook<P>];
+// export const useCheckbox = <P>(config: CheckboxConfig<P> | Record<string, never>): [Checkbox<P>] => {
+//     function setCheckbox(this: Checkbox<P>, config: Checkbox<P>)
+//     function setOptions(this: Checkbox<P>, options: CheckboxConfig<P>[])
+//     function addOption(this: Checkbox<P>, option: CheckboxConfig<P>)
+//     function setIsSelected(this: Checkbox<P>, isSelected: boolean): void
+//     function setProperties(this: Checkbox<P>, properties: P): void 
+//     function setName(this: Checkbox<P>, name: string): void 
+//     function getSelectedOptions(this: Checkbox<P>): Checkbox<P>[] 
+//     function isIndeterminate(this: Checkbox<P>): boolean 
+//     function isAllSelected(this: Checkbox<P>): boolean 
+//     function isAnySelected(this: Checkbox<P>): boolean 
+//     function removeOption(this: Checkbox<P>): void 
+//     function select(this: Checkbox<P>): void 
 
-// since we ARENT providing the user the ability to explicity modify setState, ALL crud actions need to be implemented 
-
-export declare class CheckboxHook<P> {
-    public readonly items: Checkbox<P>[];
-
-    constructor(items: Item<P>[]);
-
-    public createHook(items: CheckboxHookBase<P>[]): void;
-    public setItems(items: Item<P>[]): void;
-    public addItem(item: ItemBase<P>): void;
-    public getSelectedItems(): Item<P>[];
-    public selectAll(): void;
-    public isIndeterminate(): boolean;
-    public isAllSelected(): boolean;
-    public isAnySelected(): boolean;
-}
-
-export declare class Checkbox<P> extends CheckboxHook<P>{
-    public readonly name: string;
-    public readonly isSelected: boolean;
-    public readonly properties: P;
-    public readonly id: number;
-
-    constructor(name: string, isSelected: boolean, properties: P, id: number);
-
-    public setSelected(selected: boolean): void;
-    public setProperties(properties: I): void;
-    public setItemName(name: string): void;
-    public removeItem(): void;
-    public select(): void;
-}
-
-export interface CheckboxHookBase<P> extends ItemBase<P> {
-    name: string;
-    isSelected?: boolean;
-    properties?: I;
-    id?: number;
-    options?: CheckboxHookBase<P>[];
-}
+    
+//     const [state, setState] = useState(createCheckbox(config, undefined));
+//     return [state];
+// };
